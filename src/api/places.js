@@ -59,7 +59,9 @@ export async function fetchNearbyStores(address) {
         return {
           name: e.tags.name,
           type: translateType(e.tags.shop),
-          dist
+          dist,
+          lat: eLat,
+          lon: eLon
         };
       })
       .sort((a, b) => a.dist - b.dist);
@@ -72,10 +74,13 @@ export async function fetchNearbyStores(address) {
       }
     });
 
-    return Array.from(uniqueMap.values())
-      .slice(0, 12)
-      .map(s => `${s.name} (${s.type}, ~${s.dist}m)`)
-      .join(', ');
+    const uniqueStores = Array.from(uniqueMap.values()).slice(0, 15);
+    
+    return {
+      promptString: uniqueStores.map(s => `${s.name} (${s.type}, ~${s.dist}m)`).join(', '),
+      rawStores: uniqueStores,
+      userLocation: { lat, lon }
+    };
 
   } catch (err) {
     console.error('Erreur Places (OSM):', err);

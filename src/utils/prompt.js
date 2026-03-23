@@ -35,50 +35,47 @@ export function buildPrompt(state, localStores = null) {
 
   const specialInstructions = [];
   if (plats.toLowerCase().includes('riz') || habitudes.toLowerCase().includes('riz')) {
-    specialInstructions.push("· PRIORITÉ RIZ : Si une variété spécifique de riz (ex: Thaï, Basmati) est demandée dans les plats ou habitudes, n'inclure QUE celle-là et AUCUNE autre (ex: pas de riz brisé).");
+    specialInstructions.push("· PRIORITÉ RIZ : Si une variété spécifique de riz (ex: Thaï, Basmati) est demandée, n'inclure QUE celle-là et AUCUNE autre.");
   }
 
   if (profil === 'tres_econome' || profil === 'econome' || profil === 'equilibre') {
-    specialInstructions.push(`· OPTIMISATION HUILE : Pour le profil ${profil}, privilégier des huiles abordables (Tournesol, Colza). N'inclure l'huile d'olive que si elle est indispensable ou spécifiquement demandée.`);
+    specialInstructions.push(`· OPTIMISATION HUILE : Pour le profil ${profil}, privilégier des huiles abordables (Tournesol, Colza).`);
   }
 
-  const instructionsStr = specialInstructions.length ? `\n\nINSTRUCTIONS SPÉCIFIQUES :\n${specialInstructions.join('\n')}` : '';
+  if (state.extras.size > 0) {
+    specialInstructions.push(`· CATÉGORIES OBLIGATOIRES : L'utilisateur a sélectionné : ${extras}. Tu DOIS inclure au moins 3-4 articles pertinents pour CHAQUE catégorie choisie, adaptés à la durée de ${periode}.`);
+  }
 
-  return `Tu es un assistant expert en liste de courses en France, spécialisé dans les cuisines du monde et notamment africaines.
-Génère une liste de courses COMPLÈTE incluant ABSOLUMENT tous les ingrédients nécessaires pour réaliser les plats prévus suivants : ${plats}.
-Assure-toi de ne rien oublier pour ces recettes et propose une liste optimiser en fonction de la periode données
+  const instructionsStr = specialInstructions.length ? `\n\nINSTRUCTIONS CRITIQUES :\n${specialInstructions.join('\n')}` : '';
+
+  return `Tu es un assistant expert en liste de courses en France.
+Génère une liste de courses COMPLÈTE et RÉALISTE pour ${state.people} personnes pendant ${periode}.
+
+OBJECTIFS PRIORITAIRES :
+1. PLATS : Inclure TOUS les ingrédients pour : ${plats}.
+2. CATÉGORIES : Inclure obligatoirement des articles (Hygiène, Ménager, etc.) pour les extras sélectionnés : ${extras}.
+3. PRIX RÉELS : Utilise les VRAIS prix moyens en France (Benchmarks : Pack eau 6x1.5L = 2.50-4€, Sel = 1.20€, Poivre = 4.50€, Gel douche = 3€, Riz 1kg = 2-3€).
 
 FOYER :
-- Utilisateur : ${identite}
 - Personnes : ${state.people}
 - Période : ${periode}
-- Budget max : ${state.budget}€ pour ${periode}
-- Profil budget : ${profil} (Très économe=MDD/eco, Économe=bon rapport q/p, Équilibré=mix marques, Premium=Bio/qualité)
-- Localisation / Ville : ${ville}
+- Budget max : ${state.budget}€
+- Profil : ${profil} (${profil === 'tres_econome' ? 'Bas prix' : 'Standard'})
+- Ville : ${ville}
 - Régimes : ${regimes}
-- Styles de cuisine : ${cuisines}
-- Plats prévus : ${plats}
-- Autres catégories : ${extras}
 - Habitudes : ${habitudes}
 
 ANIMAUX : ${animauxStr}
-→ Inclure aliments avec marque précisée OU recommandation selon âge/race, litière pour chats, quantités pour ${periode}.
 
-RÈGLE IMPORTANTE – PRODUITS DE BASE :
-Inclure TOUJOURS une sélection réaliste de produits de base (garde-manger) adaptée à ${periode} et ${state.people} personnes. Adapte le prix au profil budget (${profil}).
-
-INGRÉDIENTS CUISINES AFRICAINES (suggestions si pas de plats précis) :
-riz brisé, attiéké, foutou, plantain, igname, manioc, gombo, feuilles de manioc, ndolé, poisson fumé, huile de palme, soumbara, poivre de Selim, piment séché, cube Maggi/Jumbo, lait de coco, arachides crues, gingembre frais, citron vert.
-${localStoresInstruction}${instructionsStr}
+RÈGLE : La liste doit permettre de tenir ${periode} sans retourner au magasin. ${localStoresInstruction}${instructionsStr}
 
 Réponds UNIQUEMENT en JSON valide :
 {"categories":[{"nom":"...","emoji":"...","articles":[{"nom":"...","quantite":"...","prix_estime":0.00}]}],"magasins_recommandes":["...","..."],"total_estime":0.00,"conseil":"..."}
 
-Règles : 
-1. PRIX RÉELS : Utilise des prix réalistes du marché français actuel (ex: 1.20€/kg de riz éco). Et les prix des magasin exotique.
-2. COMPLÉTUDE : Liste TOUS les ingrédients pour les plats : ${plats}.
-3. PROFIL ${profil} : Adapte scrupuleusement le type de produit au budget.${magasinsRule}
-4. CONSEIL : Ajoute un conseil d'expert et précise que les prix sont des estimations indicatives.`;
+Règles Finales : 
+- Ne pas oublier les catégories "Extra" (${extras}).
+- Adapter les quantités à ${state.people} personnes pour ${periode}.
+- CONSEIL : Ajoute un conseil d'expert et précise que les prix sont des estimations indicatives.${magasinsRule}`;
 }
 
 function buildAnimalsStr(animals) {

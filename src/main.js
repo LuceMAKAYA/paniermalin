@@ -51,8 +51,36 @@ const loadingEl = document.createElement('div');
 loadingEl.className = 'loading-view';
 loadingEl.innerHTML = `
   <div class="spinner"></div>
-  <p class="loading-text">L'IA prépare votre liste…</p>
+  <h2 class="syne" style="margin-bottom: 8px;">Préparation en cours...</h2>
+  <p class="loading-text">L'IA de Panier Malin s'active</p>
+  
+  <div class="loading-steps">
+    <div class="loading-step" data-step="0">
+      <span class="loading-step-icon">🔍</span> Analyse de votre profil foyer...
+    </div>
+    <div class="loading-step" data-step="1">
+      <span class="loading-step-icon">🥬</span> Sélection des produits de saison...
+    </div>
+    <div class="loading-step" data-step="2">
+      <span class="loading-step-icon">⚖️</span> Optimisation du budget & quantités...
+    </div>
+    <div class="loading-step" data-step="3">
+      <span class="loading-step-icon">🏠</span> Recherche des commerces locaux...
+    </div>
+    <div class="loading-step" data-step="4">
+      <span class="loading-step-icon">📊</span> Comparaison finale des prix estimés...
+    </div>
+  </div>
 `;
+
+function updateLoadingStep(stepIndex) {
+  const steps = loadingEl.querySelectorAll('.loading-step');
+  steps.forEach((s, idx) => {
+    s.classList.toggle('active', idx === stepIndex);
+    s.classList.toggle('done', idx < stepIndex);
+    if (idx < stepIndex) s.querySelector('.loading-step-icon').textContent = '✅';
+  });
+}
 
 // ── Navigation ────────────────────────────────────────────
 let formViewEl = null;
@@ -73,12 +101,13 @@ function showLoading() {
   if (formViewEl) formViewEl.style.display = 'none';
   if (!loadingEl.parentElement) main.appendChild(loadingEl);
   loadingEl.classList.add('visible');
+  updateLoadingStep(0);
 }
 
-function showResults(data) {
+function showResults(data, storeData) {
   loadingEl.classList.remove('visible');
   const state = getState();
-  resultsEl = createResultsView(data, state.budget, showForm);
+  resultsEl = createResultsView(data, state.budget, showForm, storeData);
   main.appendChild(resultsEl);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -88,23 +117,40 @@ async function handleGenerate() {
   hideError();
   setGenerateLoading(true);
   showLoading();
+  
   try {
-    const state  = getState();
-    let localStoresStr = null;
+    const state = getState();
     
-    // Check real stores near the address if provided
-    if (state.ville && state.ville.trim().length > 3) {
-      document.querySelector('.loading-text').textContent = '📍 Recherche des commerces à proximité...';
-      localStoresStr = await fetchNearbyStores(state.ville);
-      document.querySelector('.loading-text').textContent = '🧠 L\'IA prépare votre liste sur mesure...';
-    } else {
-      document.querySelector('.loading-text').textContent = '🧠 L\'IA prépare votre liste sur mesure...';
-    }
+    // Sequence Step 0: Profile
+    updateLoadingStep(0);
+    await new Promise(r => setTimeout(r, 800));
+    
+    // Sequence Step 1: Saison
+    updateLoadingStep(1);
+    await new Promise(r => setTimeout(r, 600));
 
-    const prompt = buildPrompt(state, localStoresStr);
+    // Sequence Step 2: Budget
+    updateLoadingStep(2);
+    await new Promise(r => setTimeout(r, 600));
+
+    // Sequence Step 3: Stores
+    updateLoadingStep(3);
+    let storeData = null;
+    if (state.ville && state.ville.trim().length > 3) {
+      storeData = await fetchNearbyStores(state.ville);
+    }
+    await new Promise(r => setTimeout(r, 500));
+
+    // Sequence Step 4: AI Logic
+    updateLoadingStep(4);
+    const prompt = buildPrompt(state, storeData?.promptString || null);
     const data   = await generateShoppingList(prompt);
-    setGenerateLoading(false); // ← BUG FIX: re-enable button before hiding form
-    showResults(data);
+    
+    updateLoadingStep(5);
+    await new Promise(r => setTimeout(r, 400));
+
+    setGenerateLoading(false);
+    showResults(data, storeData);
   } catch (err) {
     if (formViewEl) formViewEl.style.display = '';
     loadingEl.classList.remove('visible');
