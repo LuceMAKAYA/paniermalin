@@ -6,7 +6,7 @@ import './style.css';
 import { createProfileStep, clearProfile } from './components/ProfileStep.js';
 import { createFormView, showError, hideError, setGenerateLoading } from './components/FormView.js';
 import { createResultsView } from './components/ResultsView.js';
-import { generateShoppingList } from './api/claude.js';
+import { generateShoppingList } from './api/groq.js';
 import { fetchNearbyStores } from './api/places.js';
 import { buildPrompt } from './utils/prompt.js';
 import { getState } from './store.js';
