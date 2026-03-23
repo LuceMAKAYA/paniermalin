@@ -61,6 +61,9 @@ export function createResultsView(data, budget, onBack) {
       <div class="progress-bg">
         <div class="progress-fill ${isOver ? 'over' : 'ok'}" style="width:0%" data-target="${pct}"></div>
       </div>
+      <div class="price-disclaimer mt-8" style="font-size:0.75rem; color:var(--text-3); text-align:center;">
+        * Les prix sont des estimations indicatives et peuvent varier selon les enseignes.
+      </div>
     </div>
 
     <!-- Conseil -->

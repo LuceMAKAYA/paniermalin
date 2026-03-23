@@ -33,8 +33,20 @@ export function buildPrompt(state, localStores = null) {
     ? `· IMPORTANT: pour le tableau "magasins_recommandes", tu DOIS choisir 2 à 3 magasins pertinents UNIQUEMENT parmi la liste fournie ci-dessus (Magasins réels autour du client). Adapte le choix au profil budget (${profil}). Ne propose AUCUN magasin inventé.`
     : `· si une localisation est donnée, proposer 2 à 3 magasins réels (supermarchés, boucheries, marchés) typiquement trouvables en France dans le tableau "magasins_recommandes", adaptés au profil budget (${profil}).`;
 
+  const specialInstructions = [];
+  if (plats.toLowerCase().includes('riz') || habitudes.toLowerCase().includes('riz')) {
+    specialInstructions.push("· PRIORITÉ RIZ : Si une variété spécifique de riz (ex: Thaï, Basmati) est demandée dans les plats ou habitudes, n'inclure QUE celle-là et AUCUNE autre (ex: pas de riz brisé).");
+  }
+  
+  if (profil === 'tres_econome' || profil === 'econome' || profil === 'equilibre') {
+    specialInstructions.push(`· OPTIMISATION HUILE : Pour le profil ${profil}, privilégier des huiles abordables (Tournesol, Colza). N'inclure l'huile d'olive que si elle est indispensable ou spécifiquement demandée.`);
+  }
+
+  const instructionsStr = specialInstructions.length ? `\n\nINSTRUCTIONS SPÉCIFIQUES :\n${specialInstructions.join('\n')}` : '';
+
   return `Tu es un assistant expert en liste de courses en France, spécialisé dans les cuisines du monde et notamment africaines.
-Génère une liste de courses complète et optimisée pour la période demandée.
+Génère une liste de courses COMPLÈTE incluant ABSOLUMENT tous les ingrédients nécessaires pour réaliser les plats prévus suivants : ${plats}.
+Assure-toi de ne rien oublier pour ces recettes.
 
 FOYER :
 - Utilisateur : ${identite}
@@ -53,17 +65,20 @@ ANIMAUX : ${animauxStr}
 → Inclure aliments avec marque précisée OU recommandation selon âge/race, litière pour chats, quantités pour ${periode}.
 
 RÈGLE IMPORTANTE – PRODUITS DE BASE :
-Même si l'utilisateur n'a pas listé de plats précis, inclure TOUJOURS une sélection complète de produits de base (garde-manger) adaptée à ${periode} et ${state.people} personnes (féculents, légumes, fruits, protéines, laitages, condiments, etc.). Adapte la marque ou le style au profil budget (${profil}).
+Inclure TOUJOURS une sélection réaliste de produits de base (garde-manger) adaptée à ${periode} et ${state.people} personnes. Adapte le prix au profil budget (${profil}).
 
-INGRÉDIENTS CUISINES AFRICAINES (si pertinent) :
+INGRÉDIENTS CUISINES AFRICAINES (suggestions si pas de plats précis) :
 riz brisé, attiéké, foutou, plantain, igname, manioc, gombo, feuilles de manioc, ndolé, poisson fumé, huile de palme, soumbara, poivre de Selim, piment séché, cube Maggi/Jumbo, lait de coco, arachides crues, gingembre frais, citron vert.
-${localStoresInstruction}
-Réponds UNIQUEMENT en JSON valide sans markdown ni balises code :
+${localStoresInstruction}${instructionsStr}
+
+Réponds UNIQUEMENT en JSON valide :
 {"categories":[{"nom":"...","emoji":"...","articles":[{"nom":"...","quantite":"...","prix_estime":0.00}]}],"magasins_recommandes":["...","..."],"total_estime":0.00,"conseil":"..."}
 
-Catégories disponibles : Fruits & Légumes 🥦, Féculents & Céréales 🌾, Viandes & Poissons 🥩, Produits Laitiers 🧀, Épicerie & Conserves 🥫, Cuisine Africaine & du Monde 🌍, Épices & Condiments 🫙, Boulangerie & Snacks 🥐, Surgelés ❄️, Boissons 🥤, Hygiène & Beauté 🧴, Produits Ménagers 🧹, Animaux 🐾, Bébé 👶
-
-Règles : quantités adaptées nb de personnes/période · adapter le prix et le type de produits (éco/marque/bio) au profil budget (${profil}) ${magasinsRule} · conseil personnalisé 2-3 phrases incluant un tip d'optimisation.`;
+Règles : 
+1. PRIX RÉELS : Utilise des prix réalistes du marché français actuel (ex: 1.20€/kg de riz éco, pas 0.50€).
+2. COMPLÉTUDE : Liste TOUS les ingrédients pour les plats : ${plats}.
+3. PROFIL ${profil} : Adapte scrupuleusement le type de produit au budget.${magasinsRule}
+4. CONSEIL : Ajoute un conseil d'expert et précise que les prix sont des estimations indicatives.`;
 }
 
 function buildAnimalsStr(animals) {

@@ -33,6 +33,11 @@ export async function fetchNearbyStores(address) {
         nwr["shop"="butcher"](around:1000,${lat},${lon});
         nwr["shop"="convenience"](around:1000,${lat},${lon});
         nwr["shop"="greengrocer"](around:1000,${lat},${lon});
+        nwr["shop"="deli"](around:1000,${lat},${lon});
+        nwr["shop"="seafood"](around:1000,${lat},${lon});
+        nwr["shop"="dairy"](around:1000,${lat},${lon});
+        nwr["shop"="organic"](around:1000,${lat},${lon});
+        nwr["shop"="health_food"](around:1000,${lat},${lon});
       );
       out center 20;
     `;
@@ -97,7 +102,12 @@ function translateType(t) {
     'butcher': 'Boucherie',
     'convenience': 'Épicerie',
     'greengrocer': 'Primeur',
-    'grocery': 'Alimentation'
+    'grocery': 'Alimentation',
+    'deli': 'Traiteur / Épicerie fine',
+    'seafood': 'Poissonnerie',
+    'dairy': 'Crèmerie',
+    'organic': 'Bio',
+    'health_food': 'Magasin de diététique'
   };
   return map[t] || 'Magasin';
 }
