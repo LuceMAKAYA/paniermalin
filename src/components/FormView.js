@@ -96,8 +96,12 @@ export function createFormView(onGenerate) {
 
       <div class="mt-16 form-grid">
         <div class="form-field full">
-          <label class="field-label">📍 Votre adresse complète <span class="badge">Google Maps</span></label>
-          <gmp-place-autocomplete id="input-ville" placeholder="Ex : 15 rue de la Paix, Paris…"></gmp-place-autocomplete>
+          <label class="field-label">📍 Votre adresse complète <span class="badge" style="background:#000091">GOUV.FR</span></label>
+          <div class="autocomplete-container">
+            <input id="input-ville" class="input-text" type="text"
+              placeholder="Ex : 15 rue de la Paix, Paris…" autocomplete="off" />
+            <div id="autocomplete-results" class="autocomplete-results"></div>
+          </div>
         </div>
       </div>
 
@@ -191,24 +195,64 @@ export function createFormView(onGenerate) {
   });
   setProfilBudget('equilibre'); // default
 
-  // ── Ville (Google Autocomplete Web Component) ──
+  // ── Ville (Autocomplete API Adresse Gouv.fr) ──
   const villeInput = form.querySelector('#input-ville');
-  if (villeInput) {
-    villeInput.addEventListener('gmp-placeselect', async (e) => {
-      // The map script triggers this when a place is selected
-      const place = e.place;
-      if (place) {
-        await place.fetchFields({ fields: ['displayName', 'location'] });
-        setVille(place.displayName);
-        // Sauvegarde locale des coordonnées exactes
-        window.__googleLocation = place.location;
+  const resultsBox = form.querySelector('#autocomplete-results');
+  let debounceTimer;
+
+  if (villeInput && resultsBox) {
+    villeInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      setVille(query);
+      window.__googleLocation = null; // Re-use for coordinates
+      
+      clearTimeout(debounceTimer);
+      if (query.length < 3) {
+        resultsBox.classList.remove('visible');
+        return;
       }
+
+      debounceTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&limit=5`);
+          const data = await res.json();
+          
+          resultsBox.innerHTML = '';
+          if (data.features && data.features.length > 0) {
+            data.features.forEach(f => {
+              const item = document.createElement('div');
+              item.className = 'autocomplete-item';
+              item.innerHTML = `
+                <span class="autocomplete-name">${f.properties.label}</span>
+                <span class="autocomplete-desc">${f.properties.context}</span>
+              `;
+              item.onclick = () => {
+                villeInput.value = f.properties.label;
+                setVille(f.properties.label);
+                // On stocke les coordonnées au format Google-like pour places.js
+                window.__googleLocation = {
+                  lat: () => f.geometry.coordinates[1],
+                  lng: () => f.geometry.coordinates[0]
+                };
+                resultsBox.classList.remove('visible');
+              };
+              resultsBox.appendChild(item);
+            });
+            resultsBox.classList.add('visible');
+          } else {
+            resultsBox.classList.remove('visible');
+          }
+        } catch (err) {
+          console.error('Erreur BAN API:', err);
+        }
+      }, 300);
     });
 
-    villeInput.addEventListener('input', (e) => {
-      // Get the current raw text typed in the Custom Element
-      setVille(villeInput.inputValue || '');
-      window.__googleLocation = null;
+    // Fermer le menu si on clique ailleurs
+    document.addEventListener('click', (e) => {
+      if (!villeInput.contains(e.target) && !resultsBox.contains(e.target)) {
+        resultsBox.classList.remove('visible');
+      }
     });
   }
 

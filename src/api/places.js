@@ -1,75 +1,103 @@
 /**
- * places.js – Récupère les magasins réels via l'API Google Maps (Places API New).
- * Utilise l'API moderne pour éviter les limitations "Legacy".
+ * places.js – Récupère les magasins réels via OpenStreetMap (Overpass API).
+ * 100% gratuit, sans clé API.
  */
 
 export async function fetchNearbyStores(address) {
   if (!address || address.trim().length < 3) return null;
-  if (!window.google || !window.google.maps) return null;
 
   try {
-    const { Place } = await window.google.maps.importLibrary("places");
-    
-    let location = window.__googleLocation;
-    
-    // Fallback Geocoding form text if no autocomplete used
-    if (!location) {
-      const { Geocoder } = await window.google.maps.importLibrary("geocoding");
-      const geocoder = new Geocoder();
-      const response = await new Promise(res => {
-        geocoder.geocode({ address: address + ', France' }, (results, status) => {
-          if (status === 'OK' && results && results[0]) {
-            res(results[0].geometry.location);
-          } else {
-            res(null);
-          }
-        });
-      });
-      location = response;
+    let lat, lon;
+
+    // 1. Récupération des coordonnées
+    if (window.__googleLocation) {
+      // Coordonnées venant de l'autocomplétion Gouv.fr (formatées comme Google pour compatibilité)
+      lat = window.__googleLocation.lat();
+      lon = window.__googleLocation.lng();
+    } else {
+      // Fallback: Géocodage Nominatim si l'utilisateur n'a pas utilisé le menu déroulant
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`);
+      const geoData = await geoRes.json();
+      if (!geoData || geoData.length === 0) return null;
+      lat = parseFloat(geoData[0].lat);
+      lon = parseFloat(geoData[0].lon);
     }
 
-    if (!location) return null;
+    // 2. Recherche Overpass (NWR = Nodes, Ways, Relations pour inclure les bâtiments)
+    const query = `
+      [out:json][timeout:15];
+      (
+        nwr["shop"="supermarket"](around:1000,${lat},${lon});
+        nwr["shop"="grocery"](around:1000,${lat},${lon});
+        nwr["shop"="bakery"](around:1000,${lat},${lon});
+        nwr["shop"="butcher"](around:1000,${lat},${lon});
+        nwr["shop"="convenience"](around:1000,${lat},${lon});
+        nwr["shop"="greengrocer"](around:1000,${lat},${lon});
+      );
+      out center 20;
+    `;
 
-    // Utilisation de la nouvelle API Places (searchNearby) avec le tri par distance intégré
-    const request = {
-      fields: ['displayName', 'location', 'rating', 'primaryType'],
-      locationRestriction: {
-        center: location,
-        radius: 800,
-      },
-      includedPrimaryTypes: ['supermarket', 'grocery_store', 'bakery', 'convenience_store', 'market'],
-      maxResultCount: 15,
-      rankPreference: Place.RankPreference.DISTANCE,
-    };
-    
-    const { places } = await Place.searchNearby(request);
-    
-    if (!places || places.length === 0) return null;
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: query
+    });
+    const data = await res.json();
+    if (!data.elements || data.elements.length === 0) return null;
 
-    // Formatage pour l'IA
-    const uniqueStores = places.map(p => {
-      const nom = p.displayName || 'Magasin';
-      const type = inferType(p.primaryType);
-      const note = p.rating ? p.rating + '⭐' : 'N/A';
-      return `${nom} (${type}, Note: ${note})`;
-    }).join(', ');
-    
-    return uniqueStores;
-    
+    // 3. Tri par distance réelle
+    const stores = data.elements
+      .filter(e => e.tags && e.tags.name)
+      .map(e => {
+        const eLat = e.lat || e.center?.lat;
+        const eLon = e.lon || e.center?.lon;
+        const dist = getDistance(lat, lon, eLat, eLon);
+        return {
+          name: e.tags.name,
+          type: translateType(e.tags.shop),
+          dist
+        };
+      })
+      .sort((a, b) => a.dist - b.dist);
+
+    // Dédoublonnage par nom
+    const uniqueMap = new Map();
+    stores.forEach(s => {
+      if (!uniqueMap.has(s.name.toLowerCase())) {
+        uniqueMap.set(s.name.toLowerCase(), s);
+      }
+    });
+
+    return Array.from(uniqueMap.values())
+      .slice(0, 12)
+      .map(s => `${s.name} (${s.type}, ~${s.dist}m)`)
+      .join(', ');
+
   } catch (err) {
-    console.error('Erreur Google Places (New API):', err);
+    console.error('Erreur Places (OSM):', err);
     return null;
   }
 }
 
-function inferType(type) {
-  if (!type) return 'Boutique';
-  if (type.includes('supermarket')) return 'Supermarché';
-  if (type.includes('bakery')) return 'Boulangerie';
-  if (type.includes('grocery_store')) return 'Alimentation';
-  if (type.includes('convenience_store')) return 'Épicerie';
-  if (type.includes('market')) return 'Foire/Marché';
-  if (type.includes('butcher')) return 'Boucherie';
-  if (type.includes('greengrocer')) return 'Primeur';
-  return 'Commerce';
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLon = (lon2 - lon1) * rad;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return Math.round(R * c);
+}
+
+function translateType(t) {
+  const map = {
+    'supermarket': 'Supermarché',
+    'bakery': 'Boulangerie',
+    'butcher': 'Boucherie',
+    'convenience': 'Épicerie',
+    'greengrocer': 'Primeur',
+    'grocery': 'Alimentation'
+  };
+  return map[t] || 'Magasin';
 }

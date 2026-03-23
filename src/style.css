@@ -706,3 +706,33 @@ input[type="range"]::-moz-range-thumb {
   .profile-card { padding: 28px 20px; border-radius: var(--r-lg); margin: 0 4px; }
   .profile-title { font-size: 1.4rem; }
 }
+
+/* ===== CUSTOM AUTOCOMPLETE (BAN API) ===== */
+.autocomplete-container { position: relative; width: 100%; }
+.autocomplete-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border-focus);
+  border-top: none;
+  border-radius: 0 0 var(--r) var(--r);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  max-height: 250px;
+  overflow-y: auto;
+  display: none;
+}
+.autocomplete-results.visible { display: block; }
+.autocomplete-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: var(--surface-2); color: var(--accent); }
+.autocomplete-name { display: block; font-weight: 600; font-size: 0.9rem; }
+.autocomplete-desc { display: block; font-size: 0.75rem; color: var(--text-muted); }
+
