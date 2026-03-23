@@ -34,6 +34,9 @@ export async function generateShoppingList(prompt) {
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
+    if (response.status === 429) {
+      throw new Error("⏳ Vous avez atteint la limite de requêtes gratuites de l'IA (15 par minute).\nVeuillez patienter 30 secondes avant de réessayer.");
+    }
     const msg  = body?.error?.message || `Erreur HTTP ${response.status}`;
     throw new Error(msg);
   }
