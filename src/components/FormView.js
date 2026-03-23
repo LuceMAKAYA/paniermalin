@@ -97,8 +97,7 @@ export function createFormView(onGenerate) {
       <div class="mt-16 form-grid">
         <div class="form-field full">
           <label class="field-label">📍 Votre adresse complète <span class="badge">Google Maps</span></label>
-          <input id="input-ville" class="input-text" type="text"
-            placeholder="Ex : 15 rue de la Paix, Paris…" autocomplete="off" />
+          <gmp-place-autocomplete id="input-ville" placeholder="Ex : 15 rue de la Paix, Paris…"></gmp-place-autocomplete>
         </div>
       </div>
 
@@ -192,34 +191,24 @@ export function createFormView(onGenerate) {
   });
   setProfilBudget('equilibre'); // default
 
-  // ── Ville (Google Autocomplete) ──
+  // ── Ville (Google Autocomplete Web Component) ──
   const villeInput = form.querySelector('#input-ville');
   if (villeInput) {
-    if (window.google && window.google.maps && window.google.maps.places) {
-      const autocomplete = new window.google.maps.places.Autocomplete(villeInput, {
-        types: ['address'],
-        componentRestrictions: { country: 'fr' }
-      });
-      
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place && place.formatted_address) {
-          setVille(place.formatted_address);
-          // Sauvegarde locale des coordonnées exactes
-          if (place.geometry) {
-            window.__googleLocation = place.geometry.location;
-          }
-        }
-      });
-      
-      villeInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') e.preventDefault();
-      });
-    }
-    
-    villeInput.addEventListener('input', e => {
-      setVille(e.target.value);
-      window.__googleLocation = null; // Réinitialise si l'utilisateur modifie à la main
+    villeInput.addEventListener('gmp-placeselect', async (e) => {
+      // The map script triggers this when a place is selected
+      const place = e.place;
+      if (place) {
+        await place.fetchFields({ fields: ['displayName', 'location'] });
+        setVille(place.displayName);
+        // Sauvegarde locale des coordonnées exactes
+        window.__googleLocation = place.location;
+      }
+    });
+
+    villeInput.addEventListener('input', (e) => {
+      // Get the current raw text typed in the Custom Element
+      setVille(villeInput.inputValue || '');
+      window.__googleLocation = null;
     });
   }
 

@@ -1,23 +1,23 @@
 /**
- * places.js – Récupère les magasins réels via l'API Google Maps (Places + Geocoding).
+ * places.js – Récupère les magasins réels via l'API Google Maps (Places API New).
+ * Utilise l'API moderne pour éviter les limitations "Legacy".
  */
 
 export async function fetchNearbyStores(address) {
   if (!address || address.trim().length < 3) return null;
   if (!window.google || !window.google.maps) return null;
 
-  return new Promise((resolve) => {
-    const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+  try {
+    const { Place } = await window.google.maps.importLibrary("places");
     
-    // 1. Déterminer la géolocalisation exacte
-    let locationPromise;
-    if (window.__googleLocation) {
-      locationPromise = Promise.resolve(window.__googleLocation);
-    } else {
-      // Fallback: Geocoding si l'utilisateur n'a pas utilisé l'autocomplétion
-      const geocoder = new window.google.maps.Geocoder();
-      locationPromise = new Promise(res => {
-        geocoder.geocode({ address }, (results, status) => {
+    let location = window.__googleLocation;
+    
+    // Fallback Geocoding form text if no autocomplete used
+    if (!location) {
+      const { Geocoder } = await window.google.maps.importLibrary("geocoding");
+      const geocoder = new Geocoder();
+      const response = await new Promise(res => {
+        geocoder.geocode({ address: address + ', France' }, (results, status) => {
           if (status === 'OK' && results && results[0]) {
             res(results[0].geometry.location);
           } else {
@@ -25,63 +25,49 @@ export async function fetchNearbyStores(address) {
           }
         });
       });
+      location = response;
     }
 
-    locationPromise.then(location => {
-      if (!location) return resolve(null);
+    if (!location) return null;
 
-      // 2. Recherche des commerces autour (Google Places API NearbySearch)
-      service.nearbySearch({
-        location: location,
+    // Utilisation de la nouvelle API Places (searchNearby) avec le tri par distance intégré
+    const request = {
+      fields: ['displayName', 'location', 'rating', 'primaryType'],
+      locationRestriction: {
+        center: location,
         radius: 800,
-        keyword: 'supermarché OR épicerie OR boucherie OR primeur OR boulangerie'
-      }, (results, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-          
-          // 3. Calcul local de la distance pour chaque lieu et tri
-          const stores = results.slice(0, 15).map(place => {
-            const dist = getDistance(
-              location.lat(), location.lng(),
-              place.geometry.location.lat(), place.geometry.location.lng()
-            );
-            return {
-              name: place.name,
-              type: inferType(place.types),
-              rating: place.rating || 'N/A',
-              dist
-            };
-          }).sort((a,b) => a.dist - b.dist);
+      },
+      includedPrimaryTypes: ['supermarket', 'grocery_store', 'bakery', 'butcher', 'greengrocer'],
+      maxResultCount: 15,
+      rankPreference: Place.RankPreference.DISTANCE,
+    };
+    
+    const { places } = await Place.searchNearby(request);
+    
+    if (!places || places.length === 0) return null;
 
-          const uniqueStores = stores.map(s => `${s.name} (${s.type}, ~${s.dist}m, Note: ${s.rating}⭐)`).join(', ');
-          resolve(uniqueStores);
-        } else {
-          resolve(null);
-        }
-      });
-    });
-  });
+    // Formatage pour l'IA
+    const uniqueStores = places.map(p => {
+      const nom = p.displayName || 'Magasin';
+      const type = inferType(p.primaryType);
+      const note = p.rating ? p.rating + '⭐' : 'N/A';
+      return `${nom} (${type}, Note: ${note})`;
+    }).join(', ');
+    
+    return uniqueStores;
+    
+  } catch (err) {
+    console.error('Erreur Google Places (New API):', err);
+    return null;
+  }
 }
 
-// Formule de Haversine pour la distance exacte en mètres
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
-  const rad = Math.PI / 180;
-  const dLat = (lat2 - lat1) * rad;
-  const dLon = (lon2 - lon1) * rad;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return Math.round(R * c);
-}
-
-// Nettoyage des types Google Maps pour l'IA
-function inferType(types) {
-  if (!types) return 'Magasin';
-  if (types.includes('supermarket')) return 'Supermarché';
-  if (types.includes('bakery')) return 'Boulangerie';
-  if (types.includes('convenience')) return 'Épicerie';
-  if (types.includes('grocery_or_supermarket')) return 'Alimentation';
-  if (types.includes('health')) return 'Magasin Bio';
+function inferType(type) {
+  if (!type) return 'Boutique';
+  if (type.includes('supermarket')) return 'Supermarché';
+  if (type.includes('bakery')) return 'Boulangerie';
+  if (type.includes('grocery_store')) return 'Épicerie/Alimentation';
+  if (type.includes('butcher')) return 'Boucherie';
+  if (type.includes('greengrocer')) return 'Primeur';
   return 'Commerce';
 }
