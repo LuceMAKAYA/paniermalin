@@ -13,6 +13,8 @@ const state = {
   regimes:        new Set(),
   budget:         150,
   periode:        '1 semaine',
+  profilBudget:   'equilibre',
+  ville:          '',
   extras:         new Set(),
   plats:          '',
   habitudes:      '',
@@ -36,8 +38,11 @@ export function setGenre(val)    { state.genre  = val; }
 export function getPrenom()      { return state.prenom; }
 export function getGenre()       { return state.genre; }
 
-export function setPeriode(val)  { state.periode = val; }
-export function getPeriode()     { return state.periode; }
+export function setPeriode(val)       { state.periode = val; }
+export function getPeriode()          { return state.periode; }
+
+export function setProfilBudget(val)  { state.profilBudget = val; }
+export function setVille(val)         { state.ville = val; }
 
 export function setPlats(val)    { state.plats = val; }
 export function setHabitudes(val){ state.habitudes = val; }

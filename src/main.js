@@ -91,6 +91,7 @@ async function handleGenerate() {
     const state  = getState();
     const prompt = buildPrompt(state);
     const data   = await generateShoppingList(prompt);
+    setGenerateLoading(false); // ← BUG FIX: re-enable button before hiding form
     showResults(data);
   } catch (err) {
     if (formViewEl) formViewEl.style.display = '';

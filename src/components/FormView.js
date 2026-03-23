@@ -6,6 +6,7 @@ import { createAnimalsSection } from './AnimalsSection.js';
 import {
   toggleCuisine, toggleRegime, toggleExtra,
   setPeople, setBudget, setPlats, setHabitudes, setPeriode,
+  setProfilBudget, setVille,
 } from '../store.js';
 
 /**
@@ -66,6 +67,41 @@ export function createFormView(onGenerate) {
             <span class="periode-sub">${sub}</span>
           </button>`).join('')}
       </div>
+
+      <div class="mt-16">
+        <label class="label">Profil budget</label>
+        <div class="profil-grid" id="profil-grid">
+          <button class="profil-btn" data-value="tres_econome">
+            <span class="profil-emoji">💰</span>
+            <span class="profil-name">Très économe</span>
+            <span class="profil-desc">MDD, 1er prix, promos</span>
+          </button>
+          <button class="profil-btn" data-value="econome">
+            <span class="profil-emoji">🛍️</span>
+            <span class="profil-name">Économe</span>
+            <span class="profil-desc">Bon rapport qualité/prix</span>
+          </button>
+          <button class="profil-btn active" data-value="equilibre">
+            <span class="profil-emoji">⚖️</span>
+            <span class="profil-name">Équilibré</span>
+            <span class="profil-desc">Mix marques nationales</span>
+          </button>
+          <button class="profil-btn" data-value="premium">
+            <span class="profil-emoji">✨</span>
+            <span class="profil-name">Premium</span>
+            <span class="profil-desc">Qualité, bio si possible</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-16 form-grid">
+        <div class="form-field full">
+          <label class="field-label">Ville / Magasin habituel</label>
+          <input id="input-ville" class="input-text" type="text"
+            placeholder="Ex : Paris 11e, Lidl Marseille, Carrefour Market Lyon…" />
+        </div>
+      </div>
+
       <div class="mt-16">
         <div class="slider-header">
           <span class="slider-label">Budget total (20€ – 800€)</span>
@@ -144,6 +180,20 @@ export function createFormView(onGenerate) {
     });
   });
   setPeriode('1 semaine'); // default
+
+  // ── Profil budget ──
+  const profilBtns = form.querySelectorAll('.profil-btn');
+  profilBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      profilBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      setProfilBudget(btn.dataset.value);
+    });
+  });
+  setProfilBudget('equilibre'); // default
+
+  // ── Ville ──
+  form.querySelector('#input-ville')?.addEventListener('input', e => setVille(e.target.value));
 
   // ── Régimes ──
   form.querySelectorAll('.tag').forEach(btn => {
