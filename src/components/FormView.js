@@ -96,9 +96,9 @@ export function createFormView(onGenerate) {
 
       <div class="mt-16 form-grid">
         <div class="form-field full">
-          <label class="field-label">Ville / Magasin habituel</label>
+          <label class="field-label">📍 Votre adresse complète <span class="badge">Google Maps</span></label>
           <input id="input-ville" class="input-text" type="text"
-            placeholder="Ex : Paris 11e, Lidl Marseille, Carrefour Market Lyon…" />
+            placeholder="Ex : 15 rue de la Paix, Paris…" autocomplete="off" />
         </div>
       </div>
 
@@ -192,8 +192,36 @@ export function createFormView(onGenerate) {
   });
   setProfilBudget('equilibre'); // default
 
-  // ── Ville ──
-  form.querySelector('#input-ville')?.addEventListener('input', e => setVille(e.target.value));
+  // ── Ville (Google Autocomplete) ──
+  const villeInput = form.querySelector('#input-ville');
+  if (villeInput) {
+    if (window.google && window.google.maps && window.google.maps.places) {
+      const autocomplete = new window.google.maps.places.Autocomplete(villeInput, {
+        types: ['address'],
+        componentRestrictions: { country: 'fr' }
+      });
+      
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place && place.formatted_address) {
+          setVille(place.formatted_address);
+          // Sauvegarde locale des coordonnées exactes
+          if (place.geometry) {
+            window.__googleLocation = place.geometry.location;
+          }
+        }
+      });
+      
+      villeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') e.preventDefault();
+      });
+    }
+    
+    villeInput.addEventListener('input', e => {
+      setVille(e.target.value);
+      window.__googleLocation = null; // Réinitialise si l'utilisateur modifie à la main
+    });
+  }
 
   // ── Régimes ──
   form.querySelectorAll('.tag').forEach(btn => {
