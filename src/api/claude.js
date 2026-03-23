@@ -4,7 +4,7 @@
  * Clé API : https://aistudio.google.com/app/apikey
  */
 
-const MODEL   = 'gemini-2.5-flash-lite';
+const MODEL   = 'gemini-2.0-flash-lite';
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const URL     = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
