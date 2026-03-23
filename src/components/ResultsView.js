@@ -70,6 +70,17 @@ export function createResultsView(data, budget, onBack) {
       <p class="conseil-text">${data.conseil}</p>
     </div>` : ''}
 
+    <!-- Magasins recommandés -->
+    ${data.magasins_recommandes && data.magasins_recommandes.length > 0 ? `
+    <div class="magasins-box mt-12" style="margin-bottom:14px;">
+      <div class="magasins-title" style="font-weight:600;font-size:.85rem;margin-bottom:6px;color:var(--text);display:flex;align-items:center;gap:6px;">
+        <span class="conseil-icon" style="font-size:1rem;">📍</span> Où faire vos courses ?
+      </div>
+      <ul class="magasins-list" style="margin:0;padding-left:26px;font-size:.85rem;color:var(--text-2);line-height:1.6;">
+        ${data.magasins_recommandes.map(m => `<li>${m}</li>`).join('')}
+      </ul>
+    </div>` : ''}
+
     <!-- Category cards -->
     <div class="categories-grid">${cardsHtml}</div>
 

@@ -13,6 +13,8 @@ export function buildPrompt(state) {
   const plats     = state.plats.trim()     || 'Non spécifié (générer une liste standard équilibrée)';
   const habitudes = state.habitudes.trim() || 'Aucune';
   const periode   = state.periode        || '1 semaine';
+  const profil    = state.profilBudget   || 'equilibre';
+  const ville     = state.ville?.trim()  || 'Non spécifié';
   const prenom    = state.prenom?.trim()  || null;
   const genre     = state.genre          || null;
 
@@ -31,6 +33,8 @@ FOYER :
 - Personnes : ${state.people}
 - Période : ${periode}
 - Budget max : ${state.budget}€ pour ${periode}
+- Profil budget : ${profil} (Très économe=MDD/eco, Économe=bon rapport q/p, Équilibré=mix marques, Premium=Bio/qualité)
+- Localisation / Ville : ${ville}
 - Régimes : ${regimes}
 - Styles de cuisine : ${cuisines}
 - Plats prévus : ${plats}
@@ -41,27 +45,17 @@ ANIMAUX : ${animauxStr}
 → Inclure aliments avec marque précisée OU recommandation selon âge/race, litière pour chats, quantités pour ${periode}.
 
 RÈGLE IMPORTANTE – PRODUITS DE BASE :
-Même si l'utilisateur n'a pas listé de plats précis, inclure TOUJOURS une sélection complète de produits de base (garde-manger) adaptée à ${periode} et ${state.people} personnes :
-• Féculents : riz, pâtes, pommes de terre, lentilles, semoule
-• Légumes indispensables : oignons, ail, tomates, poivrons, carottes, épinards
-• Fruits de saison : bananes, pommes, oranges
-• Protéines polyvalentes : œufs, poulet, thon en boîte, sardines
-• Produits laitiers : beurre, fromage râpé, yaourts, lait
-• Condiments & sauces : huile (tournesol + olive), mayonnaise, moutarde, ketchup, vinaigre
-• Épices universelles : sel, poivre, cumin, curry, paprika, herbes de Provence
-• Conserves pratiques : tomates pelées, pois chiches, haricots rouges, maïs
-• Snacks & petit-déj : pain de mie, céréales, confiture, biscuits
-Adapte les quantités à la période (${periode}) et au nombre de personnes (${state.people}).
+Même si l'utilisateur n'a pas listé de plats précis, inclure TOUJOURS une sélection complète de produits de base (garde-manger) adaptée à ${periode} et ${state.people} personnes (féculents, légumes, fruits, protéines, laitages, condiments, etc.). Adapte la marque ou le style au profil budget (${profil}).
 
 INGRÉDIENTS CUISINES AFRICAINES (si pertinent) :
 riz brisé, attiéké, foutou, plantain, igname, manioc, gombo, feuilles de manioc, ndolé, poisson fumé, huile de palme, soumbara, poivre de Selim, piment séché, cube Maggi/Jumbo, lait de coco, arachides crues, gingembre frais, citron vert.
 
 Réponds UNIQUEMENT en JSON valide sans markdown ni balises code :
-{"categories":[{"nom":"...","emoji":"...","articles":[{"nom":"...","quantite":"...","prix_estime":0.00}]}],"total_estime":0.00,"conseil":"..."}
+{"categories":[{"nom":"...","emoji":"...","articles":[{"nom":"...","quantite":"...","prix_estime":0.00}]}],"magasins_recommandes":["...","..."],"total_estime":0.00,"conseil":"..."}
 
 Catégories disponibles : Fruits & Légumes 🥦, Féculents & Céréales 🌾, Viandes & Poissons 🥩, Produits Laitiers 🧀, Épicerie & Conserves 🥫, Cuisine Africaine & du Monde 🌍, Épices & Condiments 🫙, Boulangerie & Snacks 🥐, Surgelés ❄️, Boissons 🥤, Hygiène & Beauté 🧴, Produits Ménagers 🧹, Animaux 🐾, Bébé 👶
 
-Règles : quantités adaptées au nb de personnes ET à la période ${periode} · prix réalistes France 2025 · rester sous ${state.budget}€ si possible · conseil personnalisé 2-3 phrases incluant un tip pour optimiser le budget.`;
+Règles : quantités adaptées nb de personnes/période · adapter le prix et le type de produits (éco/marque/bio) au profil budget (${profil}) · si une localisation est donnée, proposer 2 à 3 magasins réels (supermarchés, boucheries, marchés) autour de l'adresse fournie dans le tableau "magasins_recommandes" · conseil personnalisé 2-3 phrases incluant un tip d'optimisation.`;
 }
 
 function buildAnimalsStr(animals) {
