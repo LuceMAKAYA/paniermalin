@@ -37,7 +37,7 @@ export async function fetchNearbyStores(address) {
         center: location,
         radius: 800,
       },
-      includedPrimaryTypes: ['supermarket', 'grocery_store', 'bakery', 'butcher', 'greengrocer'],
+      includedPrimaryTypes: ['supermarket', 'grocery_store', 'bakery', 'convenience_store', 'market'],
       maxResultCount: 15,
       rankPreference: Place.RankPreference.DISTANCE,
     };
@@ -66,7 +66,9 @@ function inferType(type) {
   if (!type) return 'Boutique';
   if (type.includes('supermarket')) return 'Supermarché';
   if (type.includes('bakery')) return 'Boulangerie';
-  if (type.includes('grocery_store')) return 'Épicerie/Alimentation';
+  if (type.includes('grocery_store')) return 'Alimentation';
+  if (type.includes('convenience_store')) return 'Épicerie';
+  if (type.includes('market')) return 'Foire/Marché';
   if (type.includes('butcher')) return 'Boucherie';
   if (type.includes('greengrocer')) return 'Primeur';
   return 'Commerce';
