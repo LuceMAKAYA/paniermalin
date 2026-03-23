@@ -247,6 +247,32 @@ h1, h2, h3, .syne { font-family: 'Syne', sans-serif; }
 .periode-btn.active .periode-sub  { color: var(--accent); opacity: .7; }
 @media (max-width: 420px) { .periode-btn { min-width: calc(50% - 4px); } }
 
+/* ===== PROFIL BUDGET SELECTOR ===== */
+.profil-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.profil-btn {
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--r);
+  padding: 12px 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition);
+  user-select: none;
+}
+.profil-emoji { display: block; font-size: 1.4rem; margin-bottom: 4px; }
+.profil-name { display: block; font-family: 'Syne', sans-serif; font-weight: 700; font-size: .88rem; color: var(--text); }
+.profil-desc { display: block; font-family: 'DM Sans', sans-serif; font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
+.profil-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.profil-btn:hover .profil-name { color: var(--accent); }
+.profil-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+}
+.profil-btn.active .profil-name { color: var(--accent); }
+.profil-btn.active .profil-desc { color: var(--accent); opacity: .7; }
+@media (max-width: 480px) { .profil-grid { grid-template-columns: 1fr; } }
+
 input[type="range"] {
   -webkit-appearance: none;
   width: 100%;

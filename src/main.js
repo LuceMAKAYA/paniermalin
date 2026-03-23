@@ -7,6 +7,7 @@ import { createProfileStep, clearProfile } from './components/ProfileStep.js';
 import { createFormView, showError, hideError, setGenerateLoading } from './components/FormView.js';
 import { createResultsView } from './components/ResultsView.js';
 import { generateShoppingList } from './api/claude.js';
+import { fetchNearbyStores } from './api/places.js';
 import { buildPrompt } from './utils/prompt.js';
 import { getState } from './store.js';
 
@@ -89,7 +90,18 @@ async function handleGenerate() {
   showLoading();
   try {
     const state  = getState();
-    const prompt = buildPrompt(state);
+    let localStoresStr = null;
+    
+    // Check real stores near the address if provided
+    if (state.ville && state.ville.trim().length > 3) {
+      document.querySelector('.loading-text').textContent = '📍 Recherche des commerces à proximité...';
+      localStoresStr = await fetchNearbyStores(state.ville);
+      document.querySelector('.loading-text').textContent = '🧠 L\'IA prépare votre liste sur mesure...';
+    } else {
+      document.querySelector('.loading-text').textContent = '🧠 L\'IA prépare votre liste sur mesure...';
+    }
+
+    const prompt = buildPrompt(state, localStoresStr);
     const data   = await generateShoppingList(prompt);
     setGenerateLoading(false); // ← BUG FIX: re-enable button before hiding form
     showResults(data);

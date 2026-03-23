@@ -6,7 +6,7 @@
  * @param {object} state - snapshot de l'état du store
  * @returns {string}
  */
-export function buildPrompt(state) {
+export function buildPrompt(state, localStores = null) {
   const cuisines  = state.cuisines.size  ? [...state.cuisines].join(', ')  : 'Non spécifié';
   const regimes   = state.regimes.size   ? [...state.regimes].join(', ')   : 'Omnivore';
   const extras    = state.extras.size    ? [...state.extras].join(', ')    : 'Aucune';
@@ -24,6 +24,14 @@ export function buildPrompt(state) {
     : 'Utilisateur anonyme';
 
   const animauxStr = buildAnimalsStr(state.animals);
+
+  const localStoresInstruction = localStores 
+    ? `\nMAGASINS RÉELS AUTOUR DU CLIENT:\nVoici les magasins physiques réellement trouvés autour de l'adresse du client:\n${localStores}\n` 
+    : '';
+
+  const magasinsRule = localStores
+    ? `· IMPORTANT: pour le tableau "magasins_recommandes", tu DOIS choisir 2 à 3 magasins pertinents UNIQUEMENT parmi la liste fournie ci-dessus (Magasins réels autour du client). Adapte le choix au profil budget (${profil}). Ne propose AUCUN magasin inventé.`
+    : `· si une localisation est donnée, proposer 2 à 3 magasins réels (supermarchés, boucheries, marchés) typiquement trouvables en France dans le tableau "magasins_recommandes", adaptés au profil budget (${profil}).`;
 
   return `Tu es un assistant expert en liste de courses en France, spécialisé dans les cuisines du monde et notamment africaines.
 Génère une liste de courses complète et optimisée pour la période demandée.
@@ -49,13 +57,13 @@ Même si l'utilisateur n'a pas listé de plats précis, inclure TOUJOURS une sé
 
 INGRÉDIENTS CUISINES AFRICAINES (si pertinent) :
 riz brisé, attiéké, foutou, plantain, igname, manioc, gombo, feuilles de manioc, ndolé, poisson fumé, huile de palme, soumbara, poivre de Selim, piment séché, cube Maggi/Jumbo, lait de coco, arachides crues, gingembre frais, citron vert.
-
+${localStoresInstruction}
 Réponds UNIQUEMENT en JSON valide sans markdown ni balises code :
 {"categories":[{"nom":"...","emoji":"...","articles":[{"nom":"...","quantite":"...","prix_estime":0.00}]}],"magasins_recommandes":["...","..."],"total_estime":0.00,"conseil":"..."}
 
 Catégories disponibles : Fruits & Légumes 🥦, Féculents & Céréales 🌾, Viandes & Poissons 🥩, Produits Laitiers 🧀, Épicerie & Conserves 🥫, Cuisine Africaine & du Monde 🌍, Épices & Condiments 🫙, Boulangerie & Snacks 🥐, Surgelés ❄️, Boissons 🥤, Hygiène & Beauté 🧴, Produits Ménagers 🧹, Animaux 🐾, Bébé 👶
 
-Règles : quantités adaptées nb de personnes/période · adapter le prix et le type de produits (éco/marque/bio) au profil budget (${profil}) · si une localisation est donnée, proposer 2 à 3 magasins réels (supermarchés, boucheries, marchés) autour de l'adresse fournie dans le tableau "magasins_recommandes" · conseil personnalisé 2-3 phrases incluant un tip d'optimisation.`;
+Règles : quantités adaptées nb de personnes/période · adapter le prix et le type de produits (éco/marque/bio) au profil budget (${profil}) ${magasinsRule} · conseil personnalisé 2-3 phrases incluant un tip d'optimisation.`;
 }
 
 function buildAnimalsStr(animals) {
