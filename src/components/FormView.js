@@ -166,7 +166,46 @@ export function createFormView(onGenerate) {
     // Step-specific events
     if (currentStep === 0) {
       const input = el.querySelector('#input-ville');
-      input.oninput = (e) => setVille(e.target.value);
+      const resultsBox = el.querySelector('#autocomplete-results');
+      let debounceTimer;
+
+      input.oninput = (e) => {
+        const query = e.target.value.trim();
+        setVille(query);
+        clearTimeout(debounceTimer);
+        if (query.length < 3) { resultsBox.style.display = 'none'; return; }
+        
+        debounceTimer = setTimeout(async () => {
+          try {
+            const res = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&limit=5`);
+            const data = await res.json();
+            resultsBox.innerHTML = '';
+            if (data.features?.length) {
+              data.features.forEach(f => {
+                const item = document.createElement('div');
+                item.style.padding = '10px';
+                item.style.borderBottom = '1px solid var(--border)';
+                item.style.cursor = 'pointer';
+                item.innerHTML = `
+                  <p style="font-weight:600; font-size:13px; margin:0;">${f.properties.label}</p>
+                  <p style="font-size:10px; color:var(--text3); margin:0;">${f.properties.context}</p>
+                `;
+                item.onclick = () => {
+                  input.value = f.properties.label;
+                  setVille(f.properties.label);
+                  // Store coordinates for the map
+                  window.__userCoords = { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+                  resultsBox.style.display = 'none';
+                };
+                resultsBox.appendChild(item);
+              });
+              resultsBox.style.display = 'block';
+            } else {
+              resultsBox.style.display = 'none';
+            }
+          } catch (err) { console.error(err); }
+        }, 300);
+      };
     }
     if (currentStep === 1) {
       el.querySelectorAll('.num-btn').forEach(b => b.onclick = () => { setPeople(b.dataset.val); render(); });

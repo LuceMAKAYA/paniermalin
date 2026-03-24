@@ -10,8 +10,10 @@ export async function fetchNearbyStores(address) {
     let lat, lon;
 
     // 1. Récupération des coordonnées
-    if (window.__googleLocation) {
-      // Coordonnées venant de l'autocomplétion Gouv.fr (formatées comme Google pour compatibilité)
+    if (window.__userCoords) {
+      lat = window.__userCoords.lat;
+      lon = window.__userCoords.lon;
+    } else if (window.__googleLocation) {
       lat = window.__googleLocation.lat();
       lon = window.__googleLocation.lng();
     } else {

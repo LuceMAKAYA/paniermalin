@@ -77,13 +77,14 @@ function renderActiveTab() {
 
     case 'map':
       scrollArea.appendChild(createMapView(currentStoreData, (storeName) => {
-        // Handle store selection from map if needed
-        console.log("Selected store from map:", storeName);
+        // Find store in data and maybe switch to list with it
+        alert(`Magasin sélectionné : ${storeName}. Vous pouvez maintenant voir les prix pour ce magasin dans l'onglet Liste.`);
+        switchTab('list');
       }));
       break;
 
     case 'profile':
-      scrollArea.appendChild(createProfileView());
+      scrollArea.appendChild(createProfileView(userName));
       break;
   }
 

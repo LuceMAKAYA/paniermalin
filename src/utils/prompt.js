@@ -7,9 +7,9 @@
  * @returns {string}
  */
 export function buildPrompt(state, localStores = null) {
-  const cuisines = state.cuisines.size ? [...state.cuisines].join(', ') : 'Non spécifié';
-  const regimes = state.regimes.size ? [...state.regimes].join(', ') : 'Omnivore';
-  const extras = state.extras.size ? [...state.extras].join(', ') : 'Aucune';
+  const cuisines = state.cuisines.length ? state.cuisines.join(', ') : 'Non spécifié';
+  const regimes = state.regimes.length ? state.regimes.join(', ') : 'Omnivore';
+  const extras = state.extras.length ? state.extras.join(', ') : 'Aucune';
   const plats = state.plats.trim() || 'Non spécifié (générer une liste standard équilibrée)';
   const habitudes = state.habitudes.trim() || 'Aucune';
   const periode = state.periode || '1 semaine';
@@ -35,21 +35,21 @@ export function buildPrompt(state, localStores = null) {
 
   const specialInstructions = [];
   if (plats.toLowerCase().includes('riz') || habitudes.toLowerCase().includes('riz')) {
-    specialInstructions.push("· PRIORITÉ RIZ : Si une variété spécifique de riz (ex: Thaï, Basmati) est demandée, n'inclure QUE celle-là et AUCUNE autre.");
+    specialInstructions.push("· PRIORITÉ RIZ : Si une variety spécifique de riz (ex: Thaï, Basmati) est demandée, n'inclure QUE celle-là et AUCUNE autre.");
   }
 
   if (profil === 'tres_econome' || profil === 'econome' || profil === 'equilibre') {
     specialInstructions.push(`· OPTIMISATION HUILE : Pour le profil ${profil}, privilégier des huiles abordables (Tournesol, Colza).`);
   }
 
-  if (state.extras.size > 0) {
+  if (state.extras.length > 0) {
     specialInstructions.push(`· CATÉGORIES OBLIGATOIRES : L'utilisateur a sélectionné : ${extras}. Tu DOIS inclure au moins 3-4 articles pertinents pour CHAQUE catégorie choisie, adaptés à la durée de ${periode}.`);
   }
 
   const instructionsStr = specialInstructions.length ? `\n\nINSTRUCTIONS CRITIQUES :\n${specialInstructions.join('\n')}` : '';
 
   return `Tu es un assistant expert en liste de courses en France.
-Génère une liste de courses COMPLÈTE et RÉALISTE pour ${state.people} personnes pendant ${periode}.
+Génère une liste de courses COMPLÈTE et RÉALISTE pour ${state.personnes} personnes pendant ${periode}.
 
 OBJECTIFS PRIORITAIRES :
 1. PLATS : Inclure TOUS les ingrédients pour : ${plats}.
@@ -57,7 +57,7 @@ OBJECTIFS PRIORITAIRES :
 3. PRIX RÉELS : Utilise les VRAIS prix moyens en France (Benchmarks : Pack eau 6x1.5L = 2.50-4€, Sel = 1.20€, Poivre = 4.50€, Gel douche = 3€, Riz 1kg = 2-3€).
 
 FOYER :
-- Personnes : ${state.people}
+- Personnes : ${state.personnes}
 - Période : ${periode}
 - Budget max : ${state.budget}€
 - Profil : ${profil} (${profil === 'tres_econome' ? 'Bas prix' : 'Standard'})
@@ -74,7 +74,7 @@ Réponds UNIQUEMENT en JSON valide :
 
 Règles Finales : 
 - Ne pas oublier les catégories "Extra" (${extras}).
-- Adapter les quantités à ${state.people} personnes pour ${periode}.
+- Adapter les quantités à ${state.personnes} personnes pour ${periode}.
 - CONSEIL : Ajoute un conseil d'expert et précise que les prix sont des estimations indicatives.${magasinsRule}`;
 }
 

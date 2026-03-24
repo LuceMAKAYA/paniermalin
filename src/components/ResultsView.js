@@ -3,6 +3,13 @@
  */
 
 export function createResultsView(data, budget, onBack, storeData) {
+  if (!data || !data.categories) {
+    const empty = document.createElement('div');
+    empty.style.padding = '40px'; empty.style.textAlign = 'center';
+    empty.innerHTML = `<h2 class="clash">Aucune donnée</h2><button class="btn-main" id="btn-empty-back">Retour</button>`;
+    setTimeout(() => { empty.querySelector('#btn-empty-back').onclick = onBack; }, 0);
+    return empty;
+  }
   const el = document.createElement('div');
   el.className = 'results-page';
   el.style.paddingTop = '10px';

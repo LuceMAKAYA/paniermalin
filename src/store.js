@@ -9,7 +9,7 @@ const state = {
   genre:          '',
   // Formulaire
   cuisines:       new Set(),
-  people:         '4',
+  personnes:      '4', // Changed from people to personnes
   regimes:        new Set(),
   budget:         150,
   periode:        '1 semaine',
@@ -18,29 +18,31 @@ const state = {
   extras:         new Set(),
   plats:          '',
   habitudes:      '',
-  /** @type {Array<{id:number, type:string, name:string, count:string, age:string, race:string, alim:string, marque:string|null, litiere:string|null, friandises:string|null}>} */
+  /** @type {Array} */
   animals:        [],
   _animalCounter: 0,
 };
 
 // --- Generic getters/setters ---
-export const getState = () => ({ ...state, cuisines: new Set(state.cuisines), regimes: new Set(state.regimes), extras: new Set(state.extras), animals: [...state.animals] });
+export const getState = () => ({ 
+  ...state, 
+  cuisines: Array.from(state.cuisines), 
+  regimes: Array.from(state.regimes), 
+  extras: Array.from(state.extras), 
+  animals: [...state.animals] 
+});
 
 
 export function setBudget(val)   { state.budget = Number(val); }
 export function getBudget()      { return state.budget; }
 
-export function setPeople(val)   { state.people = val; }
-export function getPeople()      { return state.people; }
+export function setPeople(val)   { state.personnes = val; }
+export function getPeople()      { return state.personnes; }
 
 export function setPrenom(val)   { state.prenom = val; }
 export function setGenre(val)    { state.genre  = val; }
-export function getPrenom()      { return state.prenom; }
-export function getGenre()       { return state.genre; }
 
 export function setPeriode(val)       { state.periode = val; }
-export function getPeriode()          { return state.periode; }
-
 export function setProfilBudget(val)  { state.profilBudget = val; }
 export function setVille(val)         { state.ville = val; }
 

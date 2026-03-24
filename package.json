@@ -1,7 +1,7 @@
 {
   "name": "panier-malin",
   "version": "1.0.0",
-  "description": "Générateur de liste de courses intelligent alimenté par Claude AI",
+  "description": "Générateur de liste de course",
   "private": true,
   "scripts": {
     "dev": "vite",
