@@ -1,0 +1,17 @@
+{
+  "name": "Panier Malin",
+  "short_name": "PanierMalin",
+  "description": "Votre assistant de courses intelligent",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06090f",
+  "theme_color": "#3d7fff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3737/3737372.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

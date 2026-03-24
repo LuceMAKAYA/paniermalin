@@ -1,22 +1,15 @@
 /**
- * ResultsView.js – Panier Malin 2.0
+ * ResultsView.js – Panier Malin 3.0 (Mobile PWA)
  */
 
-/**
- * @param {object} data      - Réponse JSON de l'AI
- * @param {number} budget    - Budget max
- * @param {Function} onBack  - Retour au formulaire
- * @param {object} storeData - { rawStores, userLocation }
- */
 export function createResultsView(data, budget, onBack, storeData) {
   const el = document.createElement('div');
-  el.className = 'results-view visible';
+  el.className = 'results-page';
+  el.style.paddingTop = '10px';
 
-  // --- 1. Internal State ---
-  let selectedStore = null;
-  let currentTotal = data.total_estime ?? 0;
+  let selectedStore = storeData?.rawStores?.[0] || null;
+  let checkedItems = new Set();
 
-  // --- 2. Store Heuristics ---
   const getStoreCategory = (name) => {
     const n = name.toLowerCase();
     if (n.includes('lidl') || n.includes('aldi') || n.includes('netto') || n.includes('leader price')) return 'discount';
@@ -24,223 +17,124 @@ export function createResultsView(data, budget, onBack, storeData) {
     return 'standard';
   };
 
-  const getMultiplier = (cat) => {
+  const getMultiplier = (name) => {
+    const cat = getStoreCategory(name);
     if (cat === 'discount') return 0.88;
     if (cat === 'premium') return 1.25;
     return 1.0;
   };
 
-  // --- 3. UI Helpers ---
-  const renderStats = () => {
-    const diff = budget - currentTotal;
-    const isOver = diff < 0;
+  const render = () => {
+    const m = selectedStore ? getMultiplier(selectedStore.name) : 1;
+    const currentTotal = data.total_estime * m;
     const pct = Math.min((currentTotal / budget) * 100, 100);
 
-    return `
-      <div class="budget-stats">
-        <div class="budget-stat">
-          <div class="budget-stat-label">Total estimé</div>
-          <div class="budget-stat-value accent">${currentTotal.toFixed(2)}€</div>
+    el.innerHTML = `
+      <!-- Budget Bar -->
+      <div class="budget-bar">
+        <div class="bb-track">
+          <div class="bb-fill" style="width: ${pct}%"></div>
         </div>
-        <div class="budget-stat">
-          <div class="budget-stat-label">Budget</div>
-          <div class="budget-stat-value muted">${budget}€</div>
-        </div>
-        <div class="budget-stat">
-          <div class="budget-stat-label">${isOver ? 'Dépassement' : 'Restant'}</div>
-          <div class="budget-stat-value ${isOver ? 'red' : 'green'}">${Math.abs(diff).toFixed(2)}€</div>
+        <div style="text-align: right;">
+          <p class="bb-amt">${currentTotal.toFixed(2)}€</p>
+          <p class="text-3" style="font-size: 10px;">Sur ${budget}€ max</p>
         </div>
       </div>
-      <div class="progress-bg">
-        <div class="progress-fill ${isOver ? 'over' : 'ok'}" style="width: ${pct}%"></div>
-      </div>
-    `;
-  };
 
-  const renderComparison = () => {
-    if (!storeData?.rawStores?.length) return '';
-    
-    // Group stores by category to show variety
-    const bestOfEach = { discount: null, standard: null, premium: null };
-    storeData.rawStores.forEach(s => {
-      const cat = getStoreCategory(s.name);
-      if (!bestOfEach[cat]) bestOfEach[cat] = s;
-    });
-
-    return `
-      <div class="comparison-grid">
-        ${Object.entries(bestOfEach).filter(([_, s]) => s).map(([cat, s]) => {
-          const m = getMultiplier(cat);
-          const price = (data.total_estime * m).toFixed(2);
-          return `
-            <div class="compare-card ${selectedStore?.name === s.name ? 'active' : ''}" data-name="${s.name}" data-mult="${m}">
-              <span class="compare-name">${s.name}</span>
-              <span class="compare-price ${cat === 'discount' ? 'low' : ''}">${price}€</span>
-              <span style="font-size: .65rem; color: var(--text-muted);">${cat.toUpperCase()}</span>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-  };
-
-  const renderArticles = () => {
-    const m = selectedStore ? getMultiplier(getStoreCategory(selectedStore.name)) : 1;
-    return (data.categories ?? []).filter(c => c.articles?.length).map(cat => {
-      const catTotal = cat.articles.reduce((s, a) => s + (a.prix_estime * m), 0);
-      return `
-        <div class="cat-card">
-          <div class="cat-card-head">
-            <div class="cat-card-title">${cat.emoji ?? ''} ${cat.nom}</div>
-            <div class="badge badge-green">${catTotal.toFixed(2)}€</div>
+      <!-- Store Selector -->
+      ${storeData?.rawStores?.length ? `
+        <div style="margin-bottom: 20px;">
+          <p class="field-label" style="font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 12px;">ENSEIGNES À PROXIMITÉ</p>
+          <div style="display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; scrollbar-width:none;">
+            ${storeData.rawStores.slice(0, 5).map(s => {
+              const active = selectedStore?.name === s.name;
+              const storePrice = (data.total_estime * getMultiplier(s.name)).toFixed(2);
+              return `
+                <div class="card store-card ${active ? 'active' : ''}" data-name="${s.name}" style="flex: 0 0 160px; margin-bottom: 0; padding: 14px; cursor: pointer;">
+                  <p class="clash" style="font-size: 14px; margin-bottom: 2px;">${s.name}</p>
+                  <p class="green" style="font-weight: 700; font-size: 16px;">${storePrice}€</p>
+                  <p class="text-3" style="font-size: 10px;">${s.dist}m · ${getStoreCategory(s.name)}</p>
+                </div>
+              `;
+            }).join('')}
           </div>
-          <div class="cat-card-body">
-            ${cat.articles.map(a => `
-              <div class="article-row">
-                <div class="article-check"></div>
-                <span class="article-name">${a.nom}</span>
-                <span class="article-qty">${a.quantite}</span>
-                <span class="article-price">${(a.prix_estime * m).toFixed(2)}€</span>
-              </div>`).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Articles List -->
+      <div id="articles-list">
+        ${(data.categories ?? []).map(cat => `
+          <div style="margin-bottom: 24px;">
+            <h3 class="clash" style="font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+              <span>${cat.emoji} ${cat.nom}</span>
+              <span class="text-3" style="font-size: 11px;">${cat.articles.length} articles</span>
+            </h3>
+            ${cat.articles.map(a => {
+              const id = `${cat.nom}-${a.nom}`;
+              const done = checkedItems.has(id);
+              return `
+                <div class="li-item ${done ? 'done' : ''}" data-id="${id}">
+                  <div class="chk">${done ? '✓' : ''}</div>
+                  <div style="flex: 1;">
+                    <p style="font-weight: 600; font-size: 14px;">${a.nom}</p>
+                    <p class="text-3" style="font-size: 11px;">${a.quantite}</p>
+                  </div>
+                  <p class="clash" style="font-size: 15px;">${(a.prix_estime * m).toFixed(2)}€</p>
+                </div>
+              `;
+            }).join('')}
           </div>
-        </div>`;
-    }).join('');
-  };
+        `).join('')}
+      </div>
 
-  // --- 4. Main Template ---
-  el.innerHTML = `
-    <!-- Leaflet Resources -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <div class="budget-summary no-print" id="budget-summary-box">
-      ${renderStats()}
-      <p style="font-size: .7rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
-        * Les prix s'ajustent selon l'enseigne sélectionnée ci-dessous.
-      </p>
-    </div>
+      <div class="no-print" style="margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+         <button class="btn-ghost" id="btn-copy">📋 Copier</button>
+         <button class="btn-ghost" id="btn-share">🔗 Partager</button>
+      </div>
+      <button class="btn-ghost" id="btn-re-gen" style="margin-top: 12px; border-style: dashed;">✏️ Modifier mes critères</button>
+      <div style="height: 40px;"></div>
+    `;
 
-    <div class="results-actions no-print">
-      <button class="btn-action" id="btn-copy">📋 Copier</button>
-      <button class="btn-action" id="btn-pdf">📄 PDF</button>
-      <button class="btn-action" id="btn-share">🔗 Partager</button>
-    </div>
-
-    ${storeData?.rawStores?.length ? `
-      <div id="map" class="map-container no-print"></div>
-      <div id="comparison-host" class="no-print">${renderComparison()}</div>
-    ` : ''}
-
-    ${data.conseil ? `
-      <div class="conseil-box">
-        <span class="conseil-icon">💡</span>
-        <p class="conseil-text">${data.conseil}</p>
-      </div>` : ''}
-
-    <div class="categories-grid" id="articles-host">${renderArticles()}</div>
-
-    <button class="btn-back no-print" style="margin-top: 30px;">✏️ Modifier mes préférences</button>
-    <div style="height: 40px;" class="no-print"></div>
-  `;
-
-  // --- 5. Interactivity ---
-  const updateUI = () => {
-    const m = selectedStore ? getMultiplier(getStoreCategory(selectedStore.name)) : 1;
-    currentTotal = data.total_estime * m;
-    
-    el.querySelector('#budget-summary-box').innerHTML = renderStats() + 
-      '<p style="font-size: .7rem; color: var(--text-muted); text-align: center; margin-top: 10px;">* Les prix s\'ajustent selon l\'enseigne sélectionnée.</p>';
-    el.querySelector('#articles-host').innerHTML = renderArticles();
-    if (el.querySelector('#comparison-host')) el.querySelector('#comparison-host').innerHTML = renderComparison();
-    
     attachEvents();
   };
 
   const attachEvents = () => {
-    el.querySelectorAll('.compare-card').forEach(card => {
+    el.querySelectorAll('.store-card').forEach(card => {
       card.onclick = () => {
-        const name = card.dataset.name;
-        selectedStore = storeData.rawStores.find(s => s.name === name);
-        updateUI();
+        selectedStore = storeData.rawStores.find(s => s.name === card.dataset.name);
+        render();
       };
     });
 
-    el.querySelectorAll('.article-row').forEach(row => {
-      row.onclick = () => row.classList.toggle('checked');
+    el.querySelectorAll('.li-item').forEach(item => {
+      item.onclick = () => {
+        const id = item.dataset.id;
+        if (checkedItems.has(id)) checkedItems.delete(id);
+        else checkedItems.add(id);
+        render();
+      };
     });
 
-    el.querySelector('.btn-back').onclick = onBack;
+    el.querySelector('#btn-re-gen').onclick = onBack;
 
     el.querySelector('#btn-copy').onclick = () => {
-      let text = `Ma liste de courses Panier Malin\nTotal estimé : ${currentTotal.toFixed(2)}€\n\n`;
+      let text = `Ma liste Panier Malin (${selectedStore?.name || 'Total'}) : ${(data.total_estime * (selectedStore ? getMultiplier(selectedStore.name) : 1)).toFixed(2)}€\n\n`;
       data.categories.forEach(c => {
-        text += `--- ${c.nom} ---\n`;
+        text += `[${c.emoji} ${c.nom}]\n`;
         c.articles.forEach(a => text += `- ${a.nom} (${a.quantite})\n`);
         text += `\n`;
       });
       navigator.clipboard.writeText(text);
-      showToast('Copié dans le presse-papier !');
+      alert('Liste copiée !');
     };
-
-    el.querySelector('#btn-pdf').onclick = () => window.print();
 
     el.querySelector('#btn-share').onclick = () => {
       if (navigator.share) {
-        navigator.share({ title: 'Ma liste Panier Malin', text: `J'ai généré ma liste pour ${currentTotal.toFixed(2)}€ !` });
-      } else {
-        showToast('Partage non supporté sur ce navigateur');
+        navigator.share({ title: 'Ma liste Panier Malin', text: 'Voici ma liste de courses intelligente !' });
       }
     };
   };
 
-  const showToast = (msg) => {
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
-  };
-
-  // --- 6. Map Initialization ---
-  if (storeData?.rawStores?.length) {
-    // We need to load Leaflet script dynamically if not present
-    const loadLeaflet = () => {
-      if (window.L) { initMap(); return; }
-      const script = document.createElement('script');
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.onload = initMap;
-      document.head.appendChild(script);
-    };
-
-    const initMap = () => {
-      const mapEl = el.querySelector('#map');
-      if (!mapEl) return;
-      
-      const map = L.map(mapEl).setView([storeData.userLocation.lat, storeData.userLocation.lon], 14);
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-      }).addTo(map);
-
-      // User marker
-      L.marker([storeData.userLocation.lat, storeData.userLocation.lon], {
-        icon: L.divIcon({ html: '📍', className: 'map-user-icon', iconSize: [30, 30] })
-      }).addTo(map).bindPopup("Vous êtes ici");
-
-      // Stores markers
-      storeData.rawStores.forEach(s => {
-        const marker = L.marker([s.lat, s.lon]).addTo(map);
-        marker.bindPopup(`<b>${s.name}</b><br>${s.type}<br>~${s.dist}m`);
-        marker.on('click', () => {
-          selectedStore = s;
-          updateUI();
-          map.setView([s.lat, s.lon], 15);
-        });
-      });
-    };
-
-    setTimeout(loadLeaflet, 100);
-  }
-
-  attachEvents();
+  render();
   return el;
 }

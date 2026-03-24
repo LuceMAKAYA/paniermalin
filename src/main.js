@@ -1,180 +1,185 @@
 /**
- * main.js – Point d'entrée de l'application Panier Malin.
- * Flux : ProfileStep → FormView → loading → ResultsView
+ * main.js – Panier Malin 3.0 (Mobile PWA)
  */
 import './style.css';
-import { createProfileStep, clearProfile } from './components/ProfileStep.js';
-import { createFormView, showError, hideError, setGenerateLoading } from './components/FormView.js';
+import { createFormView, setGenerateLoading } from './components/FormView.js';
 import { createResultsView } from './components/ResultsView.js';
+import { createHomeView } from './components/HomeView.js';
+import { createMapView } from './components/MapView.js';
+import { createProfileView } from './components/ProfileView.js';
 import { generateShoppingList } from './api/groq.js';
 import { fetchNearbyStores } from './api/places.js';
 import { buildPrompt } from './utils/prompt.js';
 import { getState } from './store.js';
 
-// ── Root element ──────────────────────────────────────────
+// ── App State ─────────────────────────────────────────────
+let activeTab = 'home'; // home, list, map, profile, setup
+let currentListData = null;
+let currentStoreData = null;
+
+// ── Elements ──────────────────────────────────────────────
 const app = document.getElementById('app');
+const container = document.createElement('div');
+container.className = 'screen-container';
+app.appendChild(container);
 
-// ── Header (monté après le profil) ────────────────────────
-let headerEl = null;
-function buildHeader(prenom) {
-  const greeting = prenom
-    ? `Bonjour <strong>${prenom}</strong> 👋`
-    : 'Votre liste de courses IA';
+// ── Views ─────────────────────────────────────────────────
+function renderActiveTab() {
+  container.innerHTML = '';
+  
+  if (activeTab === 'setup') {
+    renderSetup();
+    renderBottomNav(); // Keep nav even in setup? Prototype says yes
+    return;
+  }
 
-  const el = document.createElement('header');
-  el.className = 'app-header';
-  el.innerHTML = `
-    <div class="header-inner">
-      <span class="header-icon">🛒</span>
-      <div class="header-text">
-        <h1>Panier Malin</h1>
-        <p>${greeting}</p>
-      </div>
-      <button class="header-profile-btn" id="btn-reset-profile" title="Changer de profil">⚙️</button>
-    </div>
-  `;
-  el.querySelector('#btn-reset-profile').addEventListener('click', () => {
-    if (!confirm('Réinitialiser votre profil ?')) return;
-    clearProfile();
-    location.reload();
-  });
-  return el;
+  // Common Layout for Main Tabs
+  const scrollArea = document.createElement('div');
+  scrollArea.className = 'scroll-area';
+  container.appendChild(scrollArea);
+
+  switch (activeTab) {
+    case 'home':
+      const stats = {
+        hasList: !!currentListData,
+        count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : null,
+        total: currentListData ? currentListData.total_estime.toFixed(2) + '€' : null
+      };
+      scrollArea.appendChild(createHomeView('Marie Dupont', stats, switchTab));
+      break;
+
+    case 'list':
+      if (!currentListData) {
+        scrollArea.innerHTML = `
+          <div style="text-align: center; padding-top: 60px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">🛍️</div>
+            <h2 class="clash">Aucune liste active</h2>
+            <p class="text-3 mb-20">Commencez par générer votre panier intelligent.</p>
+            <button class="btn-main" onclick="window.__switchTab('setup')">Créer ma liste</button>
+          </div>
+        `;
+      } else {
+        const listEl = createResultsView(currentListData, getState().budget, () => switchTab('setup'), currentStoreData);
+        scrollArea.appendChild(listEl);
+      }
+      break;
+
+    case 'map':
+      scrollArea.appendChild(createMapView(currentStoreData, (storeName) => {
+        // Handle store selection from map if needed
+        console.log("Selected store from map:", storeName);
+      }));
+      break;
+
+    case 'profile':
+      scrollArea.appendChild(createProfileView());
+      break;
+  }
+
+  renderBottomNav();
 }
 
-// ── Main wrapper ──────────────────────────────────────────
-const main = document.createElement('main');
-main.className = 'app-main';
-app.appendChild(main);
-
-// ── Loading view ──────────────────────────────────────────
-const loadingEl = document.createElement('div');
-loadingEl.className = 'loading-view';
-loadingEl.innerHTML = `
-  <div class="spinner"></div>
-  <h2 class="syne" style="margin-bottom: 8px;">Préparation en cours...</h2>
-  <p class="loading-text">L'IA de Panier Malin s'active</p>
-  
-  <div class="loading-steps">
-    <div class="loading-step" data-step="0">
-      <span class="loading-step-icon">🔍</span> Analyse de votre profil foyer...
-    </div>
-    <div class="loading-step" data-step="1">
-      <span class="loading-step-icon">🥬</span> Sélection des produits de saison...
-    </div>
-    <div class="loading-step" data-step="2">
-      <span class="loading-step-icon">⚖️</span> Optimisation du budget & quantités...
-    </div>
-    <div class="loading-step" data-step="3">
-      <span class="loading-step-icon">🏠</span> Recherche des commerces locaux...
-    </div>
-    <div class="loading-step" data-step="4">
-      <span class="loading-step-icon">📊</span> Comparaison finale des prix estimés...
-    </div>
-  </div>
-`;
-
-function updateLoadingStep(stepIndex) {
-  const steps = loadingEl.querySelectorAll('.loading-step');
-  steps.forEach((s, idx) => {
-    s.classList.toggle('active', idx === stepIndex);
-    s.classList.toggle('done', idx < stepIndex);
-    if (idx < stepIndex) s.querySelector('.loading-step-icon').textContent = '✅';
-  });
+function renderSetup() {
+  const formEl = createFormView(handleGenerate);
+  container.appendChild(formEl);
 }
 
 // ── Navigation ────────────────────────────────────────────
-let formViewEl = null;
-let resultsEl  = null;
+function switchTab(tabId) {
+  activeTab = tabId;
+  renderActiveTab();
+}
+window.__switchTab = switchTab; // Globale pour accès inline
 
-function showForm() {
-  if (resultsEl) { resultsEl.remove(); resultsEl = null; }
-  loadingEl.classList.remove('visible');
-  if (!formViewEl) {
-    formViewEl = createFormView(handleGenerate);
-    main.appendChild(formViewEl);
+function renderBottomNav() {
+  let nav = app.querySelector('.bottom-nav');
+  if (!nav) {
+    nav = document.createElement('nav');
+    nav.className = 'bottom-nav';
+    app.appendChild(nav);
   }
-  formViewEl.style.display = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const tabs = [
+    { id: 'home', icon: '🏠', label: 'Accueil' },
+    { id: 'list', icon: '🛍️', label: 'Liste' },
+    { id: 'map', icon: '🗺️', label: 'Carte' },
+    { id: 'profile', icon: '👤', label: 'Profil' }
+  ];
+
+  nav.innerHTML = tabs.map(t => `
+    <div class="nav-tab ${activeTab === t.id ? 'active' : ''}" onclick="window.__switchTab('${t.id}')">
+      <div class="nt-icon">${t.icon}</div>
+      <div class="nt-label">${t.label}</div>
+    </div>
+  `).join('');
 }
 
-function showLoading() {
-  if (formViewEl) formViewEl.style.display = 'none';
-  if (!loadingEl.parentElement) main.appendChild(loadingEl);
-  loadingEl.classList.add('visible');
-  updateLoadingStep(0);
-}
-
-function showResults(data, storeData) {
-  loadingEl.classList.remove('visible');
-  const state = getState();
-  resultsEl = createResultsView(data, state.budget, showForm, storeData);
-  main.appendChild(resultsEl);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ── Generate handler ──────────────────────────────────────
+// ── Generate Handler ──────────────────────────────────────
 async function handleGenerate() {
-  hideError();
-  setGenerateLoading(true);
-  showLoading();
-  
+  // Transfer selection to loading animation
+  activeTab = 'loading';
+  renderLoading();
+
   try {
     const state = getState();
-    
-    // Sequence Step 0: Profile
     updateLoadingStep(0);
-    await new Promise(r => setTimeout(r, 800));
-    
-    // Sequence Step 1: Saison
+    await new Promise(r => setTimeout(r, 600));
+
     updateLoadingStep(1);
     await new Promise(r => setTimeout(r, 600));
 
-    // Sequence Step 2: Budget
     updateLoadingStep(2);
-    await new Promise(r => setTimeout(r, 600));
-
-    // Sequence Step 3: Stores
-    updateLoadingStep(3);
     let storeData = null;
     if (state.ville && state.ville.trim().length > 3) {
       storeData = await fetchNearbyStores(state.ville);
     }
     await new Promise(r => setTimeout(r, 500));
 
-    // Sequence Step 4: AI Logic
-    updateLoadingStep(4);
+    updateLoadingStep(3);
     const prompt = buildPrompt(state, storeData?.promptString || null);
     const data   = await generateShoppingList(prompt);
     
-    updateLoadingStep(5);
+    currentListData = data;
+    currentStoreData = storeData;
+    
+    updateLoadingStep(4);
     await new Promise(r => setTimeout(r, 400));
 
-    setGenerateLoading(false);
-    showResults(data, storeData);
+    activeTab = 'list';
+    renderActiveTab();
   } catch (err) {
-    if (formViewEl) formViewEl.style.display = '';
-    loadingEl.classList.remove('visible');
-    setGenerateLoading(false);
-    showError(err.message);
+    activeTab = 'setup';
+    renderActiveTab();
+    alert("Erreur: " + err.message);
   }
 }
 
-// ── Boot – ProfileStep first ──────────────────────────────
-function boot() {
-  const profileEl = createProfileStep((profile) => {
-    // Mount personalized header
-    headerEl = buildHeader(profile.prenom);
-    app.insertBefore(headerEl, main);
-    // Show form
-    showForm();
+function renderLoading() {
+  container.innerHTML = `
+    <div class="gen-page">
+      <div class="gen-orb">🤖</div>
+      <h2 class="clash">Génération en cours…</h2>
+      <p class="text-3 mb-20">Votre panier intelligent se prépare</p>
+      <div id="gen-steps" style="width: 100%;">
+        <div class="gs act" id="g0"><div class="gd"></div>Analyse du profil</div>
+        <div class="gs" id="g1"><div class="gd"></div>Sélection saison</div>
+        <div class="gs" id="g2"><div class="gd"></div>Recherche magasins</div>
+        <div class="gs" id="g3"><div class="gd"></div>IA Génération</div>
+        <div class="gs" id="g4"><div class="gd"></div>Finalisation</div>
+      </div>
+    </div>
+  `;
+}
+
+function updateLoadingStep(idx) {
+  const steps = container.querySelectorAll('.gs');
+  steps.forEach((s, i) => {
+    s.classList.toggle('act', i === idx);
+    s.classList.toggle('done', i < idx);
+    if (i < idx) s.innerHTML = '<span>✓</span> ' + s.textContent.trim();
   });
-
-  if (profileEl) {
-    // Show profile step covering the whole screen
-    main.appendChild(profileEl);
-  }
-  // If profileEl is null, the profile was already saved → onComplete already called
 }
 
-boot();
+// ── Boot ──────────────────────────────────────────────────
+switchTab('home');
 
