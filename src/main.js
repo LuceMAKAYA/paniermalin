@@ -18,8 +18,8 @@ import { auth } from './api/auth.js';
 // ── App State ─────────────────────────────────────────────
 let currentUser = auth.getSession();
 let activeTab = 'home'; // home, list, map, profile, setup
-let currentListData = null;
-let currentStoreData = null;
+let currentListData = currentUser?.listData || null;
+let currentStoreData = currentUser?.storeData || null;
 
 // ── Elements ──────────────────────────────────────────────
 const app = document.getElementById('app');
@@ -156,6 +156,9 @@ async function handleGenerate() {
     currentListData = data;
     currentStoreData = storeData;
     
+    // Save to session for persistence
+    auth.updateSessionData({ listData: data, storeData: storeData });
+
     updateLoadingStep(4);
     await new Promise(r => setTimeout(r, 400));
 

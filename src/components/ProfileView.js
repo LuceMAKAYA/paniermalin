@@ -1,3 +1,6 @@
+import { getState } from '../store.js';
+import { auth } from '../api/auth.js';
+
 export function createProfileView(userName) {
   const el = document.createElement('div');
   el.className = 'profile-view';
@@ -9,7 +12,7 @@ export function createProfileView(userName) {
         ${(userName || 'U')[0].toUpperCase()}
       </div>
       <h2 class="clash" style="font-size: 24px;">${userName || 'Utilisateur'}</h2>
-      <p class="text-3" style="font-size: 13px;">Auxerre · Plan Famille · Depuis mars 2024</p>
+      <p class="text-3" style="font-size: 13px;">${state.ville || 'Localisation non définie'} · Plan ${currentUser?.type === 'guest' ? 'Invité' : 'Liberté'} · Depuis mars 2024</p>
     </div>
 
     <!-- 3-Metric Bar -->

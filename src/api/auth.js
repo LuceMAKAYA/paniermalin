@@ -57,5 +57,23 @@ export const auth = {
   /** Helper to save session */
   saveSession(user) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  },
+
+  /** Update user data in both session and user list */
+  updateSessionData(data) {
+    const session = this.getSession();
+    if (!session) return;
+    
+    const updated = { ...session, ...data };
+    this.saveSession(updated);
+
+    if (session.type === 'user') {
+      const users = this.getUsers();
+      const idx = users.findIndex(u => u.id === session.id);
+      if (idx !== -1) {
+        users[idx] = { ...users[idx], ...data };
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      }
+    }
   }
 };
