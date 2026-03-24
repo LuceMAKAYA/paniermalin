@@ -62,9 +62,9 @@ export function createResultsView(data, budget, onBack, storeData) {
       ` : ''}
 
       <!-- Articles List -->
-      <div id="articles-list">
+      <div id="articles-list" class="responsive-grid" style="margin-top: 30px;">
         ${(data.categories ?? []).map(cat => `
-          <div style="margin-bottom: 24px;">
+          <div class="card" style="margin-bottom: 0; background: transparent; padding: 0; border: none;">
             <h3 class="clash" style="font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
               <span>${cat.emoji} ${cat.nom}</span>
               <span class="text-3" style="font-size: 11px;">${cat.articles.length} articles</span>

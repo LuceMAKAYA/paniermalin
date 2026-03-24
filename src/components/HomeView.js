@@ -37,13 +37,13 @@ export function createHomeView(userName, listStats, onSwitchTab) {
     <!-- Quick Actions -->
     <div style="margin-top: 32px;">
       <h3 class="clash" style="font-size: 16px; margin-bottom: 20px;">Actions rapides</h3>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <div class="card" id="btn-quick-new" style="padding: 16px; cursor: pointer; border-color: rgba(61,127,255,0.2);">
+      <div class="responsive-grid">
+        <div class="card" id="btn-quick-new" style="padding: 16px; cursor: pointer; border-color: rgba(61,127,255,0.2); margin-bottom: 0;">
           <div style="font-size: 24px; margin-bottom: 12px;">✨</div>
           <p style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">Nouvelle liste</p>
           <p class="text-3" style="font-size: 11px;">Générateur IA</p>
         </div>
-        <div class="card" id="btn-quick-map" style="padding: 16px; cursor: pointer;">
+        <div class="card" id="btn-quick-map" style="padding: 16px; cursor: pointer; margin-bottom: 0;">
           <div style="font-size: 24px; margin-bottom: 12px;">📍</div>
           <p style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">Magasins</p>
           <p class="text-3" style="font-size: 11px;">Carte interactive</p>

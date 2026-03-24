@@ -7,13 +7,15 @@ import { createResultsView } from './components/ResultsView.js';
 import { createHomeView } from './components/HomeView.js';
 import { createMapView } from './components/MapView.js';
 import { createProfileView } from './components/ProfileView.js';
+import { createLandingView } from './components/LandingView.js';
 import { generateShoppingList } from './api/groq.js';
 import { fetchNearbyStores } from './api/places.js';
 import { buildPrompt } from './utils/prompt.js';
 import { getState } from './store.js';
 
 // ── App State ─────────────────────────────────────────────
-let activeTab = 'home'; // home, list, map, profile, setup
+let userName = localStorage.getItem('panier_malin_user');
+let activeTab = 'home'; // home, list, map, profile, setup, landing
 let currentListData = null;
 let currentStoreData = null;
 
@@ -27,9 +29,18 @@ app.appendChild(container);
 function renderActiveTab() {
   container.innerHTML = '';
   
+  if (!userName) {
+    container.appendChild(createLandingView((name) => {
+      userName = name;
+      activeTab = 'home';
+      renderActiveTab();
+    }));
+    return;
+  }
+
   if (activeTab === 'setup') {
     renderSetup();
-    renderBottomNav(); // Keep nav even in setup? Prototype says yes
+    renderBottomNav();
     return;
   }
 
@@ -45,7 +56,7 @@ function renderActiveTab() {
         count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : null,
         total: currentListData ? currentListData.total_estime.toFixed(2) + '€' : null
       };
-      scrollArea.appendChild(createHomeView('Marie Dupont', stats, switchTab));
+      scrollArea.appendChild(createHomeView(userName, stats, switchTab));
       break;
 
     case 'list':
