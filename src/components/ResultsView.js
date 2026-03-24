@@ -1,7 +1,3 @@
-/**
- * ResultsView.js – Panier Malin 3.0 (Mobile PWA)
- */
-
 export function createResultsView(data, budget, onBack, storeData) {
   if (!data || !data.categories) {
     const empty = document.createElement('div');
@@ -16,6 +12,9 @@ export function createResultsView(data, budget, onBack, storeData) {
 
   let selectedStore = storeData?.rawStores?.[0] || null;
   let checkedItems = new Set();
+  
+  // Local mutable state for editing
+  let currentCategories = JSON.parse(JSON.stringify(data.categories));
 
   const getStoreCategory = (name) => {
     const n = name.toLowerCase();
@@ -33,10 +32,13 @@ export function createResultsView(data, budget, onBack, storeData) {
 
   const render = () => {
     const m = selectedStore ? getMultiplier(selectedStore.name) : 1;
-    const currentTotal = data.total_estime * m;
+    const currentTotal = currentCategories.reduce((acc, cat) => 
+      acc + cat.articles.reduce((a, art) => a + (art.prix_estime || 0), 0), 0) * m;
     const pct = Math.min((currentTotal / budget) * 100, 100);
 
     el.innerHTML = `
+      <h2 class="clash no-print" style="font-size: 22px; margin-bottom: 20px;">Ma Liste Optimisée</h2>
+
       <!-- Budget Bar -->
       <div class="budget-bar">
         <div class="bb-track">
@@ -50,17 +52,17 @@ export function createResultsView(data, budget, onBack, storeData) {
 
       <!-- Store Selector -->
       ${storeData?.rawStores?.length ? `
-        <div style="margin-bottom: 20px;">
-          <p class="field-label" style="font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 12px;">ENSEIGNES À PROXIMITÉ</p>
-          <div style="display: flex; overflow-x: auto; gap: 12px; padding-bottom: 10px; scrollbar-width:none;">
+        <div class="no-print" style="margin-bottom: 24px;">
+          <p class="field-label" style="font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 12px;">COMPAREZ LES ENSEIGNES</p>
+          <div class="h-scroll">
             ${storeData.rawStores.slice(0, 5).map(s => {
               const active = selectedStore?.name === s.name;
-              const storePrice = (data.total_estime * getMultiplier(s.name)).toFixed(2);
+              const storePrice = (currentTotal / m * getMultiplier(s.name)).toFixed(2);
               return `
-                <div class="card store-card ${active ? 'active' : ''}" data-name="${s.name}" style="flex: 0 0 160px; margin-bottom: 0; padding: 14px; cursor: pointer;">
-                  <p class="clash" style="font-size: 14px; margin-bottom: 2px;">${s.name}</p>
-                  <p class="green" style="font-weight: 700; font-size: 16px;">${storePrice}€</p>
-                  <p class="text-3" style="font-size: 10px;">${s.dist}m · ${getStoreCategory(s.name)}</p>
+                <div class="card store-card ${active ? 'active' : ''}" data-name="${s.name}" style="flex: 0 0 140px; margin-bottom: 0; padding: 12px; cursor: pointer;">
+                  <p class="clash" style="font-size: 13px; margin-bottom: 2px;">${s.name}</p>
+                  <p class="green" style="font-weight: 700; font-size: 15px;">${storePrice}€</p>
+                  <p class="text-3" style="font-size: 9px;">${s.dist}m · ${getStoreCategory(s.name)}</p>
                 </div>
               `;
             }).join('')}
@@ -69,36 +71,46 @@ export function createResultsView(data, budget, onBack, storeData) {
       ` : ''}
 
       <!-- Articles List -->
-      <div id="articles-list" class="responsive-grid" style="margin-top: 30px;">
-        ${(data.categories ?? []).map(cat => `
+      <div id="articles-list" class="responsive-grid" style="margin-top: 10px;">
+        ${currentCategories.map((cat, catIdx) => `
           <div class="card" style="margin-bottom: 0; background: transparent; padding: 0; border: none;">
             <h3 class="clash" style="font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
               <span>${cat.emoji} ${cat.nom}</span>
               <span class="text-3" style="font-size: 11px;">${cat.articles.length} articles</span>
             </h3>
-            ${cat.articles.map(a => {
+            ${cat.articles.map((a, artIdx) => {
               const id = `${cat.nom}-${a.nom}`;
               const done = checkedItems.has(id);
               return `
-                <div class="li-item ${done ? 'done' : ''}" data-id="${id}">
+                <div class="li-item ${done ? 'done' : ''}" data-id="${id}" data-cat="${catIdx}" data-art="${artIdx}">
                   <div class="chk">${done ? '✓' : ''}</div>
                   <div style="flex: 1;">
                     <p style="font-weight: 600; font-size: 14px;">${a.nom}</p>
                     <p class="text-3" style="font-size: 11px;">${a.quantite}</p>
                   </div>
-                  <p class="clash" style="font-size: 15px;">${(a.prix_estime * m).toFixed(2)}€</p>
+                  <div style="text-align: right; display: flex; align-items: center; gap: 8px;">
+                    <p class="clash" style="font-size: 15px;">${(a.prix_estime * m).toFixed(2)}€</p>
+                    <div class="delete-item-btn no-print" data-cat="${catIdx}" data-art="${artIdx}">✕</div>
+                  </div>
                 </div>
               `;
             }).join('')}
+            
+            <!-- Quick Add for this category -->
+            <div class="add-item-bar no-print" data-cat="${catIdx}">
+              <input type="text" placeholder="Ajouter un article..." data-cat="${catIdx}">
+              <div style="color: var(--accent); font-weight: 700; cursor: pointer; padding: 0 8px;" class="do-quick-add" data-cat="${catIdx}">+</div>
+            </div>
           </div>
         `).join('')}
       </div>
 
+      <!-- Action Buttons -->
       <div class="no-print" style="margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-         <button class="btn-ghost" id="btn-copy">📋 Copier</button>
+         <button class="btn-ghost" id="btn-print">🖨️ Imprimer</button>
          <button class="btn-ghost" id="btn-share">🔗 Partager</button>
       </div>
-      <button class="btn-ghost" id="btn-re-gen" style="margin-top: 12px; border-style: dashed;">✏️ Modifier mes critères</button>
+      <button class="btn-ghost no-print" id="btn-re-gen" style="margin-top: 12px; border-style: dashed;">✏️ Nouveau panier IA</button>
       <div style="height: 40px;"></div>
     `;
 
@@ -106,6 +118,7 @@ export function createResultsView(data, budget, onBack, storeData) {
   };
 
   const attachEvents = () => {
+    // Store Selection
     el.querySelectorAll('.store-card').forEach(card => {
       card.onclick = () => {
         selectedStore = storeData.rawStores.find(s => s.name === card.dataset.name);
@@ -113,8 +126,10 @@ export function createResultsView(data, budget, onBack, storeData) {
       };
     });
 
+    // Checkbox Toggle
     el.querySelectorAll('.li-item').forEach(item => {
-      item.onclick = () => {
+      item.onclick = (e) => {
+        if (e.target.classList.contains('delete-item-btn')) return;
         const id = item.dataset.id;
         if (checkedItems.has(id)) checkedItems.delete(id);
         else checkedItems.add(id);
@@ -122,22 +137,59 @@ export function createResultsView(data, budget, onBack, storeData) {
       };
     });
 
-    el.querySelector('#btn-re-gen').onclick = onBack;
+    // Delete Item
+    el.querySelectorAll('.delete-item-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const cIdx = parseInt(btn.dataset.cat);
+        const aIdx = parseInt(btn.dataset.art);
+        currentCategories[cIdx].articles.splice(aIdx, 1);
+        render();
+      };
+    });
 
-    el.querySelector('#btn-copy').onclick = () => {
-      let text = `Ma liste Panier Malin (${selectedStore?.name || 'Total'}) : ${(data.total_estime * (selectedStore ? getMultiplier(selectedStore.name) : 1)).toFixed(2)}€\n\n`;
-      data.categories.forEach(c => {
+    // Add Item
+    el.querySelectorAll('.add-item-bar input').forEach(input => {
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          const cIdx = parseInt(input.dataset.cat);
+          const val = input.value.trim();
+          if (val) {
+            currentCategories[cIdx].articles.push({ nom: val, quantite: '1 unité', prix_estime: 2.50 });
+            render();
+          }
+        }
+      };
+    });
+
+    el.querySelectorAll('.do-quick-add').forEach(btn => {
+      btn.onclick = () => {
+        const cIdx = parseInt(btn.dataset.cat);
+        const input = el.querySelector(`.add-item-bar input[data-cat="${cIdx}"]`);
+        const val = input.value.trim();
+        if (val) {
+          currentCategories[cIdx].articles.push({ nom: val, quantite: '1 unité', prix_estime: 2.50 });
+          render();
+        }
+      };
+    });
+
+    // General Actions
+    el.querySelector('#btn-re-gen').onclick = onBack;
+    el.querySelector('#btn-print').onclick = () => window.print();
+
+    el.querySelector('#btn-share').onclick = () => {
+      let text = `Ma liste Panier Malin :\n\n`;
+      currentCategories.forEach(c => {
         text += `[${c.emoji} ${c.nom}]\n`;
         c.articles.forEach(a => text += `- ${a.nom} (${a.quantite})\n`);
         text += `\n`;
       });
-      navigator.clipboard.writeText(text);
-      alert('Liste copiée !');
-    };
-
-    el.querySelector('#btn-share').onclick = () => {
       if (navigator.share) {
-        navigator.share({ title: 'Ma liste Panier Malin', text: 'Voici ma liste de courses intelligente !' });
+        navigator.share({ title: 'Ma liste Panier Malin', text });
+      } else {
+        navigator.clipboard.writeText(text);
+        alert('Liste copiée dans le presse-papier !');
       }
     };
   };

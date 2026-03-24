@@ -6,66 +6,105 @@ export function createHomeView(userName, listStats, onSwitchTab) {
   const el = document.createElement('div');
   el.className = 'home-view';
 
+  // Mock Promo Data
+  const promos = [
+    { store: 'Lidl', dist: '0.8km', name: 'Boeuf haché 500g', price: '3,89€', old: '5,40€', discount: '-28%'},
+    { store: 'Carrefour', dist: '1.4km', name: 'Yaourts Danone ×8', price: '2,24€', old: '3,20€', discount: '-30%'},
+    { store: 'Aldi', dist: '2.1km', name: 'Poulet entier 1.2kg', price: '4,50€', old: '6,10€', discount: '-26%'}
+  ];
+
   el.innerHTML = `
     <div style="padding: 10px 0 20px;">
       <p class="text-3" style="font-size: 14px;">Bonjour 👋</p>
       <h1 class="clash" style="font-size: 28px;">${userName || 'Utilisateur'}</h1>
     </div>
 
-    <!-- Hero Card -->
-    <div class="card hero-card" style="padding: 24px;">
-      <p style="font-size: 11px; font-weight: 700; color: var(--teal); margin-bottom: 8px; letter-spacing: 0.5px;">✦ LISTE ACTIVE</p>
-      <h2 class="clash" style="font-size: 22px; margin-bottom: 4px;">Panier de la semaine</h2>
-      <p class="text-2" style="font-size: 13px; margin-bottom: 20px; color: rgba(255,255,255,0.6);">Optimisée pour votre budget</p>
+    <!-- Hero Card V2 -->
+    <div class="card hero-card" style="padding: 24px; position: relative; overflow: hidden;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+        <div>
+          <p style="font-size: 11px; font-weight: 700; color: var(--teal); margin-bottom: 4px; letter-spacing: 0.5px;">✦ SEMAINE DU 24 MARS</p>
+          <p class="text-3" style="font-size: 11px;">${listStats.people || '4'} personnes · Équilibré</p>
+        </div>
+        <div class="badge badge-ia">Saison 🌿</div>
+      </div>
       
-      <div class="hero-stats">
-        <div class="hs" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-          <div class="hs-val">${listStats.count || '--'}</div>
+      <div class="hero-stats" style="margin-bottom: 24px;">
+        <div class="hs">
+          <div class="hs-val">${listStats.count || '0'}</div>
           <div class="hs-label">Articles</div>
         </div>
-        <div class="hs" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-          <div class="hs-val">${listStats.total || '--€'}</div>
+        <div class="hs">
+          <div class="hs-val">${listStats.total || '0€'}</div>
           <div class="hs-label">Estimé</div>
+        </div>
+        <div class="hs">
+          <div class="hs-val">68%</div>
+          <div class="hs-label">Saison</div>
         </div>
       </div>
       
-      <button class="btn-main" id="btn-go-list-home" style="margin-top: 20px; font-size: 14px; padding: 14px;">
-        ${listStats.hasList ? 'Ouvrir ma liste →' : 'Créer ma liste →'}
+      <button class="btn-main" id="btn-go-list-home" style="font-size: 14px; padding: 14px;">
+        ${listStats.hasList ? 'Voir ma liste de courses →' : 'Créer ma liste →'}
       </button>
     </div>
 
-    <!-- Quick Actions -->
-    <div style="margin-top: 32px;">
-      <h3 class="clash" style="font-size: 16px; margin-bottom: 20px;">Actions rapides</h3>
-      <div class="responsive-grid">
-        <div class="card" id="btn-quick-new" style="padding: 16px; cursor: pointer; border-color: rgba(61,127,255,0.2); margin-bottom: 0;">
-          <div style="font-size: 24px; margin-bottom: 12px;">✨</div>
-          <p style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">Nouvelle liste</p>
-          <p class="text-3" style="font-size: 11px;">Générateur IA</p>
-        </div>
-        <div class="card" id="btn-quick-map" style="padding: 16px; cursor: pointer; margin-bottom: 0;">
-          <div style="font-size: 24px; margin-bottom: 12px;">📍</div>
-          <p style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">Magasins</p>
-          <p class="text-3" style="font-size: 11px;">Carte interactive</p>
-        </div>
+    <!-- Promos Section -->
+    <div class="promos-section" style="margin-top: 32px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 class="clash" style="font-size: 16px;">🔥 Promos ce soir</h3>
+        <span class="accent" style="font-size: 12px; font-weight: 600; cursor: pointer;">Voir tout</span>
+      </div>
+      <div class="h-scroll">
+        ${promos.map(p => `
+          <div class="card promo-card">
+            <span class="promo-tag">${p.discount}</span>
+            <p class="text-3" style="font-size: 10px; margin-bottom: 4px;">🛒 ${p.store} · ${p.dist}</p>
+            <p style="font-weight: 600; font-size: 13px; margin-bottom: 12px; height: 32px; overflow: hidden;">${p.name}</p>
+            <div>
+              <span class="promo-price">${p.price}</span>
+              <span class="old-price">${p.old}</span>
+            </div>
+          </div>
+        `).join('')}
       </div>
     </div>
 
-    <!-- Tips/Promo Section -->
-    <div class="card" style="margin-top: 24px; background: var(--bg3); border-color: var(--border2);">
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <div style="background: var(--ambs); color: var(--amber); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">💡</div>
-        <div>
-          <p style="font-weight: 600; font-size: 14px;">Économisez 12€ cette semaine</p>
-          <p class="text-3" style="font-size: 11px;">En privilégiant les marques distributeurs chez Lidl.</p>
+    <!-- Quick Access Grid -->
+    <div style="margin-top: 32px;">
+      <h3 class="clash" style="font-size: 16px; margin-bottom: 20px;">Accès rapide</h3>
+      <div class="responsive-grid" style="gap: 12px;">
+        <div class="card clickable" id="btn-mode-courses" style="padding: 16px; margin-bottom: 0;">
+          <div style="font-size: 24px; margin-bottom: 12px;">🛍️</div>
+          <p style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Mode courses</p>
+          <div class="badge badge-en-cours">En cours</div>
+        </div>
+        <div class="card clickable" id="btn-quick-map" style="padding: 16px; margin-bottom: 0;">
+          <div style="font-size: 24px; margin-bottom: 12px;">📍</div>
+          <p style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Magasins</p>
+          <div class="badge badge-ouvert">Ouvert</div>
+        </div>
+        <div class="card clickable" id="btn-quick-family" style="padding: 16px; margin-bottom: 0;">
+          <div style="font-size: 24px; margin-bottom: 12px;">👥</div>
+          <p style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Famille</p>
+          <div class="badge badge-live">Live 🟢</div>
+        </div>
+        <div class="card clickable" id="btn-quick-new" style="padding: 16px; margin-bottom: 0;">
+          <div style="font-size: 24px; margin-bottom: 12px;">✨</div>
+          <p style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Nouvelle liste</p>
+          <div class="badge badge-ia">IA</div>
         </div>
       </div>
     </div>
+    
+    <div style="height: 40px;"></div>
   `;
 
   el.querySelector('#btn-go-list-home').onclick = () => onSwitchTab(listStats.hasList ? 'list' : 'setup');
+  el.querySelector('#btn-mode-courses').onclick = () => onSwitchTab('list');
   el.querySelector('#btn-quick-new').onclick = () => onSwitchTab('setup');
   el.querySelector('#btn-quick-map').onclick = () => onSwitchTab('map');
+  el.querySelector('#btn-quick-family').onclick = () => onSwitchTab('profile');
 
   return el;
 }

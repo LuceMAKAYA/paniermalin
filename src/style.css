@@ -181,10 +181,57 @@ h1, h2, h3, .syne, .clash {
   border-color: var(--accent);
   background: var(--as);
 }
-.card.clickable:hover, .profile-item:hover {
+.card.clickable:hover, .profile-item:hover, .store-card:hover {
   background: var(--card2);
 }
-.profile-item { transition: background 0.2s; cursor: pointer; }
+.profile-item, .store-card { transition: background 0.2s; cursor: pointer; }
+
+/* Status Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge-live { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+.badge-ia { background: rgba(61,127,255,0.15); color: var(--accent); border: 1px solid var(--as); }
+.badge-en-cours { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid var(--ambs); }
+.badge-ouvert { background: rgba(34,197,255,0.15); color: #0ea5e9; border: 1px solid rgba(34,197,255,0.2); }
+
+/* Horizontal Scroll */
+.h-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding-bottom: 12px;
+  scrollbar-width: none;
+}
+.h-scroll::-webkit-scrollbar { display: none; }
+
+/* Promo Card */
+.promo-card {
+  flex: 0 0 160px;
+  padding: 12px;
+  position: relative;
+}
+.promo-tag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--red);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.promo-price { color: var(--green); font-weight: 700; font-size: 16px; }
+.old-price { text-decoration: line-through; color: var(--text3); font-size: 11px; margin-left: 4px; }
 
 .btn-main {
   width: 100%;
@@ -356,3 +403,43 @@ h1, h2, h3, .syne, .clash {
 .green { color: var(--green); }
 .red { color: var(--red); }
 .clash { font-family: 'Clash Display', sans-serif; }
+
+/* Print utility */
+@media print {
+  .bottom-nav, .no-print, .btn-ghost, .btn-main, .hero-card, .promos-section, .add-item-bar { display: none !important; }
+  body, .screen-container { background: white !important; color: black !important; padding: 0 !important; }
+  .card, .li-item { border: 1px solid #eee !important; background: white !important; color: black !important; box-shadow: none !important; }
+  .results-page { padding: 0 !important; }
+  .results-view h1, .results-view h2, .results-view h3 { color: black !important; }
+  .bb-track { border: 1px solid #ccc; }
+  .bb-fill { background: #333 !important; }
+}
+
+/* Editable List Styles */
+.delete-item-btn {
+  opacity: 0.3;
+  transition: all 0.2s;
+  cursor: pointer;
+  padding: 8px;
+  font-size: 14px;
+}
+.li-item:hover .delete-item-btn { opacity: 1; }
+.delete-item-btn:hover { color: var(--red); transform: scale(1.2); }
+
+.add-item-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  background: var(--bg2);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px dashed var(--border2);
+}
+.add-item-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  outline: none;
+  font-size: 14px;
+}
