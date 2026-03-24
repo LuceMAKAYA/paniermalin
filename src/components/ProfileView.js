@@ -1,3 +1,5 @@
+import { getState } from '../store.js';
+
 export function createProfileView(userName) {
   const el = document.createElement('div');
   el.className = 'profile-view';
