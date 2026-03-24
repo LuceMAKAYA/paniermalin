@@ -1,7 +1,7 @@
 import { getState } from '../store.js';
 import { auth } from '../api/auth.js';
 
-export function createProfileView(userName) {
+export function createProfileView(user) {
   const el = document.createElement('div');
   el.className = 'profile-view';
   const state = getState();
@@ -9,10 +9,10 @@ export function createProfileView(userName) {
   el.innerHTML = `
     <div style="text-align: center; padding: 20px 0 30px;">
       <div style="width: 80px; height: 80px; border-radius: 40px; background: linear-gradient(135deg, var(--accent), var(--teal)); margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; border: 4px solid var(--bg2); box-shadow: 0 10px 30px rgba(61,127,255,0.3);">
-        ${(userName || 'U')[0].toUpperCase()}
+        ${(user?.name || 'U')[0].toUpperCase()}
       </div>
-      <h2 class="clash" style="font-size: 24px;">${userName || 'Utilisateur'}</h2>
-      <p class="text-3" style="font-size: 13px;">${state.ville || 'Localisation non définie'} · Plan ${currentUser?.type === 'guest' ? 'Invité' : 'Liberté'} · Depuis mars 2024</p>
+      <h2 class="clash" style="font-size: 24px;">${user?.name || 'Utilisateur'}</h2>
+      <p class="text-3" style="font-size: 13px;">${state.ville || 'Localisation non définie'} · Plan ${user?.type === 'guest' ? 'Invité' : 'Liberté'} · Depuis mars 2024</p>
     </div>
 
     <!-- 3-Metric Bar -->

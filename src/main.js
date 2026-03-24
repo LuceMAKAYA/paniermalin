@@ -86,7 +86,7 @@ function renderActiveTab() {
       break;
 
     case 'profile':
-      scrollArea.appendChild(createProfileView(currentUser.name));
+      scrollArea.appendChild(createProfileView(currentUser));
       break;
   }
 
