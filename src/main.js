@@ -13,9 +13,11 @@ import { fetchNearbyStores } from './api/places.js';
 import { buildPrompt } from './utils/prompt.js';
 import { getState } from './store.js';
 
+import { auth } from './api/auth.js';
+
 // ── App State ─────────────────────────────────────────────
-let userName = localStorage.getItem('panier_malin_user');
-let activeTab = 'home'; // home, list, map, profile, setup, landing
+let currentUser = auth.getSession();
+let activeTab = 'home'; // home, list, map, profile, setup
 let currentListData = null;
 let currentStoreData = null;
 
@@ -29,9 +31,9 @@ app.appendChild(container);
 function renderActiveTab() {
   container.innerHTML = '';
   
-  if (!userName) {
-    container.appendChild(createLandingView((name) => {
-      userName = name;
+  if (!currentUser) {
+    container.appendChild(createLandingView((user) => {
+      currentUser = user;
       activeTab = 'home';
       renderActiveTab();
     }));
@@ -56,7 +58,7 @@ function renderActiveTab() {
         count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : null,
         total: currentListData ? currentListData.total_estime.toFixed(2) + '€' : null
       };
-      scrollArea.appendChild(createHomeView(userName, stats, switchTab));
+      scrollArea.appendChild(createHomeView(currentUser.name, stats, switchTab));
       break;
 
     case 'list':
@@ -84,7 +86,7 @@ function renderActiveTab() {
       break;
 
     case 'profile':
-      scrollArea.appendChild(createProfileView(userName));
+      scrollArea.appendChild(createProfileView(currentUser.name));
       break;
   }
 

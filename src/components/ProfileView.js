@@ -1,4 +1,5 @@
 import { getState } from '../store.js';
+import { auth } from '../api/auth.js';
 
 export function createProfileView(userName) {
   const el = document.createElement('div');
@@ -48,8 +49,8 @@ export function createProfileView(userName) {
   });
 
   el.querySelector('#btn-logout').onclick = () => {
-    if (confirm('Voulez-vous réinitialiser vos données ?')) {
-      localStorage.clear();
+    if (confirm('Voulez-vous vous déconnecter ?')) {
+      auth.logout();
       location.reload();
     }
   };
