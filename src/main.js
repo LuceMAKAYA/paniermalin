@@ -34,6 +34,8 @@ function renderActiveTab() {
   if (!currentUser) {
     container.appendChild(createLandingView((user) => {
       currentUser = user;
+      currentListData = user?.listData || null;
+      currentStoreData = user?.storeData || null;
       activeTab = 'home';
       renderActiveTab();
     }));
@@ -55,6 +57,7 @@ function renderActiveTab() {
     case 'home':
       const stats = {
         hasList: !!currentListData,
+        people: getState().personnes,
         count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : null,
         total: currentListData ? currentListData.total_estime.toFixed(2) + '€' : null
       };
@@ -158,6 +161,9 @@ async function handleGenerate() {
     
     // Save to session for persistence
     await auth.updateSessionData({ listData: data, storeData: storeData });
+    
+    // Archive to history table
+    await auth.saveToHistory(data, storeData);
 
     updateLoadingStep(4);
     await new Promise(r => setTimeout(r, 400));
@@ -206,6 +212,8 @@ async function boot() {
       await new Promise(r => setTimeout(r, 500));
       const user = await auth.login(currentUser.email, currentUser.password); // Simple way to refresh for this demo
       currentUser = user;
+      currentListData = user?.listData || null;
+      currentStoreData = user?.storeData || null;
     } catch (e) {
       console.warn("Session refresh failed", e);
     }

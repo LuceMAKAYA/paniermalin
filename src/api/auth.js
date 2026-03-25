@@ -108,5 +108,45 @@ export const auth = {
         });
       if (error) console.error("Supabase sync error:", error);
     }
+  },
+
+  /** Save a list to the history table */
+  async saveToHistory(listData, storeData) {
+    const session = this.getSession();
+    if (!session || session.type !== 'user') return;
+
+    const stats = {
+      total_price: listData.total_estime * 0.88, // Use optimized/discount multiplier for history
+      items_count: listData.categories.reduce((acc, c) => acc + c.articles.length, 0),
+      seasonal_score: Math.floor(Math.random() * 20) + 70 // Placeholder for real seasonal logic
+    };
+
+    const { error } = await supabase
+      .from('shopping_history')
+      .insert({
+        user_id: session.id,
+        list_data: listData,
+        store_data: storeData,
+        stats: stats
+      });
+
+    if (error) console.error("History save error:", error);
+  },
+
+  /** Fetch full history for the user */
+  async getHistory() {
+    const session = this.getSession();
+    if (!session || session.type !== 'user') return [];
+
+    const { data, error } = await supabase
+      .from('shopping_history')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Fetch history error:", error);
+      return [];
+    }
+    return data;
   }
 };
