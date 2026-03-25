@@ -1,66 +1,81 @@
-/**
- * auth.js – Simulateur d'authentification utilisant localStorage.
- */
-
-const USERS_KEY = 'panier_malin_users';
-const SESSION_KEY = 'panier_malin_session';
+import { supabase } from '../supabase.js';
 
 export const auth = {
-  // --- Core Methods ---
-  
-  /** Get all registered users */
-  getUsers() {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-  },
+  /** Get all registered users (Not used in Supabase auth, handled by Supabase) */
+  getUsers() { return []; },
 
   /** Sign up a new user */
-  signup(name, email, password) {
-    const users = this.getUsers();
-    if (users.find(u => u.email === email)) {
-      throw new Error('Cet email est déjà utilisé.');
-    }
-    const newUser = { id: Date.now(), name, email, password, type: 'user' };
-    users.push(newUser);
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    this.saveSession(newUser);
-    return newUser;
+  async signup(name, email, password) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name }
+      }
+    });
+    if (error) throw error;
+    
+    // Create initial profile
+    await supabase.from('profiles').upsert({
+      id: data.user.id,
+      full_name: name
+    });
+
+    return { ...data.user, name: name, type: 'user' };
   },
 
   /** Log in an existing user */
-  login(email, password) {
-    const users = this.getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user) {
-      throw new Error('Email ou mot de passe incorrect.');
-    }
-    this.saveSession(user);
-    return user;
+  async login(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    if (error) throw error;
+
+    // Fetch profile data
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    return { 
+      ...data.user, 
+      name: profile?.full_name || data.user.email, 
+      type: 'user',
+      listData: profile?.list_data,
+      storeData: profile?.store_data,
+      ville: profile?.ville
+    };
   },
 
-  /** Continue as guest */
+  /** Continue as guest (Keeps local storage for now, or could use Supabase Anonymous) */
   continueAsGuest(name) {
     const guestUser = { id: 'guest-' + Date.now(), name, type: 'guest' };
-    this.saveSession(guestUser);
+    localStorage.setItem('panier_malin_session', JSON.stringify(guestUser));
     return guestUser;
   },
 
   /** Log out */
-  logout() {
-    localStorage.removeItem(SESSION_KEY);
+  async logout() {
+    await supabase.auth.signOut();
+    localStorage.removeItem('panier_malin_session');
   },
 
   /** Get current session */
   getSession() {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    // Note: session restoration is better handled via await supabase.auth.getUser() on boot
+    // but for the UI transition, we return a cached object or null
+    return JSON.parse(localStorage.getItem('panier_malin_session') || 'null');
   },
 
-  /** Helper to save session */
+  /** Helper to save session (Internal Supabase handles its own session in localstorage) */
   saveSession(user) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    localStorage.setItem('panier_malin_session', JSON.stringify(user));
   },
 
-  /** Update user data in both session and user list */
-  updateSessionData(data) {
+  /** Update user data in both session and Supabase profile */
+  async updateSessionData(data) {
     const session = this.getSession();
     if (!session) return;
     
@@ -68,12 +83,16 @@ export const auth = {
     this.saveSession(updated);
 
     if (session.type === 'user') {
-      const users = this.getUsers();
-      const idx = users.findIndex(u => u.id === session.id);
-      if (idx !== -1) {
-        users[idx] = { ...users[idx], ...data };
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-      }
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: session.id,
+          list_data: data.listData || session.listData,
+          store_data: data.storeData || session.storeData,
+          ville: data.ville || session.ville,
+          updated_at: new Date().toISOString()
+        });
+      if (error) console.error("Supabase sync error:", error);
     }
   }
 };

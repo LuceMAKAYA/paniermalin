@@ -157,7 +157,7 @@ async function handleGenerate() {
     currentStoreData = storeData;
     
     // Save to session for persistence
-    auth.updateSessionData({ listData: data, storeData: storeData });
+    await auth.updateSessionData({ listData: data, storeData: storeData });
 
     updateLoadingStep(4);
     await new Promise(r => setTimeout(r, 400));
@@ -198,5 +198,21 @@ function updateLoadingStep(idx) {
 }
 
 // ── Boot ──────────────────────────────────────────────────
-switchTab('home');
+// ── Boot ──────────────────────────────────────────────────
+async function boot() {
+  // If we have a local session, try to refresh it from Supabase if it's a real user
+  if (currentUser && currentUser.type === 'user') {
+    try {
+      // Small delay to let Supabase SDK init
+      await new Promise(r => setTimeout(r, 500));
+      const user = await auth.login(currentUser.email, currentUser.password); // Simple way to refresh for this demo
+      currentUser = user;
+    } catch (e) {
+      console.warn("Session refresh failed", e);
+    }
+  }
+  renderActiveTab();
+}
+
+boot();
 

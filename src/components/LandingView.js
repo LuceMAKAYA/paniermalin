@@ -83,24 +83,39 @@ export function createLandingView(onSuccess) {
     el.querySelector('#back-welcome')?.addEventListener('click', () => { mode = 'welcome'; render(); });
 
     // Actions
-    el.querySelector('#do-signup')?.addEventListener('click', () => {
+    el.querySelector('#do-signup')?.addEventListener('click', async () => {
       const name = el.querySelector('#su-name').value;
       const email = el.querySelector('#su-email').value;
       const pass = el.querySelector('#su-pass').value;
       if (!name || !email || !pass) return showError('Veuillez remplir tous les champs.');
+      
+      const btn = el.querySelector('#do-signup');
+      btn.disabled = true; btn.textContent = 'Création...';
+      
       try {
-        const user = auth.signup(name, email, pass);
+        const user = await auth.signup(name, email, pass);
         onSuccess(user);
-      } catch (e) { showError(e.message); }
+      } catch (e) { 
+        showError(e.message); 
+        btn.disabled = false; btn.textContent = "Rejoindre Panier Malin";
+      }
     });
 
-    el.querySelector('#do-login')?.addEventListener('click', () => {
+    el.querySelector('#do-login')?.addEventListener('click', async () => {
       const email = el.querySelector('#li-email').value;
       const pass = el.querySelector('#li-pass').value;
+      if (!email || !pass) return showError('Veuillez remplir tous les champs.');
+
+      const btn = el.querySelector('#do-login');
+      btn.disabled = true; btn.textContent = 'Connexion...';
+
       try {
-        const user = auth.login(email, pass);
+        const user = await auth.login(email, pass);
         onSuccess(user);
-      } catch (e) { showError('Email ou mot de passe incorrect.'); }
+      } catch (e) { 
+        showError('Email ou mot de passe incorrect.'); 
+        btn.disabled = false; btn.textContent = 'Se connecter';
+      }
     });
 
     el.querySelector('#do-guest')?.addEventListener('click', () => {
