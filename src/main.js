@@ -2,7 +2,7 @@
  * main.js – Panier Malin 3.0 (Mobile PWA)
  */
 import './style.css';
-import { createFormView, setGenerateLoading } from './components/FormView.js';
+import { createFormView } from './components/FormView.js';
 import { createResultsView } from './components/ResultsView.js';
 import { createHomeView } from './components/HomeView.js';
 import { createMapView } from './components/MapView.js';
@@ -197,7 +197,6 @@ function updateLoadingStep(idx) {
   });
 }
 
-// ── Boot ──────────────────────────────────────────────────
 // ── Boot ──────────────────────────────────────────────────
 async function boot() {
   // If we have a local session, try to refresh it from Supabase if it's a real user

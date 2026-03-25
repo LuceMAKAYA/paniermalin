@@ -21,7 +21,9 @@ export const auth = {
       full_name: name
     });
 
-    return { ...data.user, name: name, type: 'user' };
+    const userData = { ...data.user, name: name, type: 'user' };
+    this.saveSession(userData);
+    return userData;
   },
 
   /** Log in an existing user */
@@ -33,13 +35,23 @@ export const auth = {
     if (error) throw error;
 
     // Fetch profile data
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', data.user.id)
       .single();
 
-    return { 
+    // Self-healing: Create profile if missing
+    if (!profile) {
+      const { data: newProfile, error: pErr } = await supabase
+        .from('profiles')
+        .upsert({ id: data.user.id, full_name: data.user.user_metadata?.full_name || data.user.email.split('@')[0] })
+        .select()
+        .single();
+      if (!pErr) profile = newProfile;
+    }
+
+    const userData = { 
       ...data.user, 
       name: profile?.full_name || data.user.email, 
       type: 'user',
@@ -47,6 +59,8 @@ export const auth = {
       storeData: profile?.store_data,
       ville: profile?.ville
     };
+    this.saveSession(userData);
+    return userData;
   },
 
   /** Continue as guest (Keeps local storage for now, or could use Supabase Anonymous) */
