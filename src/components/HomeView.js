@@ -2,16 +2,19 @@
  * HomeView.js – Panier Malin 3.0 (Mobile PWA)
  */
 
+import { promosApi } from '../api/promos.js';
+
 export function createHomeView(userName, listStats, onSwitchTab) {
   const el = document.createElement('div');
   el.className = 'home-view';
 
-  // Mock Promo Data
-  const promos = [
-    { store: 'Lidl', dist: '0.8km', name: 'Boeuf haché 500g', price: '3,89€', old: '5,40€', discount: '-28%'},
-    { store: 'Carrefour', dist: '1.4km', name: 'Yaourts Danone ×8', price: '2,24€', old: '3,20€', discount: '-30%'},
-    { store: 'Aldi', dist: '2.1km', name: 'Poulet entier 1.2kg', price: '4,50€', old: '6,10€', discount: '-26%'}
-  ];
+  const render = (promos = []) => {
+    // Fallback if no real promos yet
+    const displayPromos = promos.length > 0 ? promos : [
+      { store_name: 'Lidl', dist: '0.8km', product_name: 'Boeuf haché 500g', promo_price: '3,89€', original_price: '5,40€', discount_tag: '-28%'},
+      { store_name: 'Carrefour', dist: '1.4km', product_name: 'Yaourts Danone ×8', promo_price: '2,24€', original_price: '3,20€', discount_tag: '-30%'},
+      { store_name: 'Aldi', dist: '2.1km', product_name: 'Poulet entier 1.2kg', promo_price: '4,50€', original_price: '6,10€', discount_tag: '-26%'}
+    ];
 
   el.innerHTML = `
     <div style="padding: 10px 0 20px;">
@@ -56,14 +59,14 @@ export function createHomeView(userName, listStats, onSwitchTab) {
         <span class="accent" style="font-size: 12px; font-weight: 600; cursor: pointer;">Voir tout</span>
       </div>
       <div class="h-scroll">
-        ${promos.map(p => `
+        ${displayPromos.map(p => `
           <div class="card promo-card">
-            <span class="promo-tag">${p.discount}</span>
-            <p class="text-3" style="font-size: 10px; margin-bottom: 4px;">🛒 ${p.store} · ${p.dist}</p>
-            <p style="font-weight: 600; font-size: 13px; margin-bottom: 12px; height: 32px; overflow: hidden;">${p.name}</p>
+            <span class="promo-tag">${p.discount_tag}</span>
+            <p class="text-3" style="font-size: 10px; margin-bottom: 4px;">🛒 ${p.store_name} ${p.dist ? '· ' + p.dist : ''}</p>
+            <p style="font-weight: 600; font-size: 13px; margin-bottom: 12px; height: 32px; overflow: hidden;">${p.product_name}</p>
             <div>
-              <span class="promo-price">${p.price}</span>
-              <span class="old-price">${p.old}</span>
+              <span class="promo-price">${p.promo_price}${typeof p.promo_price === 'number' ? '€' : ''}</span>
+              <span class="old-price">${p.original_price}${typeof p.original_price === 'number' ? '€' : ''}</span>
             </div>
           </div>
         `).join('')}
@@ -100,11 +103,22 @@ export function createHomeView(userName, listStats, onSwitchTab) {
     <div style="height: 40px;"></div>
   `;
 
-  el.querySelector('#btn-go-list-home').onclick = () => onSwitchTab(listStats.hasList ? 'list' : 'setup');
-  el.querySelector('#btn-mode-courses').onclick = () => onSwitchTab('list');
-  el.querySelector('#btn-quick-new').onclick = () => onSwitchTab('setup');
-  el.querySelector('#btn-quick-map').onclick = () => onSwitchTab('map');
-  el.querySelector('#btn-quick-family').onclick = () => onSwitchTab('profile');
+    el.querySelector('#btn-go-list-home').onclick = () => onSwitchTab(listStats.hasList ? 'list' : 'setup');
+    el.querySelector('#btn-mode-courses').onclick = () => onSwitchTab('list');
+    el.querySelector('#btn-quick-new').onclick = () => onSwitchTab('setup');
+    el.querySelector('#btn-quick-map').onclick = () => onSwitchTab('map');
+    el.querySelector('#btn-quick-family').onclick = () => onSwitchTab('profile');
+  };
+
+  // Initial render with fallback/mock
+  render();
+
+  // Async fetch real promos from Supabase
+  promosApi.getActivePromos().then(realPromos => {
+    if (realPromos && realPromos.length > 0) {
+      render(realPromos);
+    }
+  });
 
   return el;
 }
