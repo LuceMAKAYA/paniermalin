@@ -294,25 +294,28 @@ async function boot() {
         listSubscription = shopping.subscribeToList(activeList.id, async (payload) => {
           if (payload.eventType === 'UPDATE') {
             const updatedItem = payload.new;
-            // Update local state
+            if (!currentListData || !currentListData.categories) return;
+
             currentListData.categories.forEach(cat => {
-              cat.articles.forEach(art => {
-                if (art.id === updatedItem.id) {
-                  art.done = updatedItem.is_checked;
-                }
-              });
+              if (cat.articles) {
+                cat.articles.forEach(art => {
+                  if (art.id === updatedItem.id) {
+                    art.done = updatedItem.is_checked;
+                  }
+                });
+              }
             });
-            // Refresh activity feed
-            recentActivity = await shopping.getRecentActivity(activeList.id);
             
-            if (activeTab === 'home' || activeTab === 'list') {
-              renderActiveTab();
-            }
+            recentActivity = await shopping.getRecentActivity(activeList.id);
+            if (activeTab === 'home' || activeTab === 'list') renderActiveTab();
+
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
             const newList = await shopping.getActiveList(user.id);
-            currentListData = newList;
-            recentActivity = await shopping.getRecentActivity(activeList.id);
-            renderActiveTab();
+            if (newList && newList.categories && newList.categories.length > 0) {
+              currentListData = newList;
+              recentActivity = await shopping.getRecentActivity(activeList.id);
+              if (activeTab === 'home' || activeTab === 'list') renderActiveTab();
+            }
           }
         });
       }
