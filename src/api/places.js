@@ -25,10 +25,8 @@ export async function fetchNearbyStores(address) {
       lon = parseFloat(geoData[0].lon);
     }
 
-    // 2. Recherche Overpass (NWR = Nodes, Ways, Relations pour inclure les bâtiments)
-    const query = `
-      [out:json][timeout:15];
-      (
+    // 2. Recherche Overpass avec timeout et gestion d'erreurs robuste
+    const query = `[out:json][timeout:15];(
         nwr["shop"="supermarket"](around:1000,${lat},${lon});
         nwr["shop"="grocery"](around:1000,${lat},${lon});
         nwr["shop"="bakery"](around:1000,${lat},${lon});
@@ -40,16 +38,37 @@ export async function fetchNearbyStores(address) {
         nwr["shop"="dairy"](around:1000,${lat},${lon});
         nwr["shop"="organic"](around:1000,${lat},${lon});
         nwr["shop"="health_food"](around:1000,${lat},${lon});
-      );
-      out center 20;
-    `;
+      );out center 20;`;
 
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: query
-    });
-    const data = await res.json();
-    if (!data.elements || data.elements.length === 0) return null;
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    let data;
+    try {
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        body: query,
+        signal: controller.signal
+      });
+      clearTimeout(id);
+
+      if (!res.ok) {
+        console.warn(`Overpass API error: ${res.status}`);
+        return null;
+      }
+
+      data = await res.json();
+    } catch (fetchErr) {
+      clearTimeout(id);
+      if (fetchErr.name === 'AbortError') {
+        console.warn('Overpass API timeout (10s)');
+      } else {
+        console.error('Overpass API parse/network error:', fetchErr);
+      }
+      return null;
+    }
+
+    if (!data || !data.elements || data.elements.length === 0) return null;
 
     // 3. Tri par distance réelle
     const stores = data.elements
