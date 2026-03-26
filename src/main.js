@@ -58,8 +58,9 @@ function renderActiveTab() {
       const stats = {
         hasList: !!currentListData,
         people: getState().personnes,
-        count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : null,
-        total: currentListData ? (currentListData.total_estime).toFixed(2) + '€' : null,
+        count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : 0,
+        articlesFound: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.filter(a => a.done).length, 0) : 0,
+        total: currentListData ? (currentListData.total_estime).toFixed(2) + '€' : '0.00€',
         budgetGoal: getState().budget
       };
       scrollArea.appendChild(createHomeView(currentUser.name, stats, switchTab));

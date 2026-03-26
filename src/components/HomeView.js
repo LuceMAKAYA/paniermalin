@@ -7,110 +7,124 @@ export function createHomeView(userName, listStats, onSwitchTab) {
   const el = document.createElement('div');
   el.className = 'home-view fade-in';
 
-  // Get a random tip
-  const tips = [
-    { icon: '💡', text: "Achetez les fruits de saison pour économiser jusqu'à 30%." },
-    { icon: '🥗', text: "Cuisinez en gros le dimanche pour gagner du temps en semaine." },
-    { icon: '📱', text: "Scannez vos tickets pour suivre l'évolution des prix." },
-    { icon: '🌿', text: "Privilégiez le vrac pour réduire vos déchets plastiques." }
+  // Dummy data for forgotten items
+  const forgottenItems = [
+    { icon: '🥚', name: 'Œufs bio', price: '~3.20€' },
+    { icon: '🧴', name: 'Lessive', price: '~8.50€' },
+    { icon: '🥦', name: 'Brocoli', price: '~2.10€' },
+    { icon: '🧀', name: 'Comté 12m', price: '~5.40€' },
+    { icon: '🍎', name: 'Pommes', price: '~2.80€' }
   ];
-  const dailyTip = tips[Math.floor(Math.random() * tips.length)];
 
   const render = () => {
-    // Calculate budget percentage
-    const budgetRaw = parseFloat(listStats.total?.replace('€', '') || 0);
-    const budgetGoal = listStats.budgetGoal || 150;
-    const budgetPct = Math.min(Math.round((budgetRaw / budgetGoal) * 100), 100);
+    // Article progress
+    const articlesFound = listStats.articlesFound || 12;
+    const totalArticles = listStats.count || 18;
+    const progressPct = Math.min(Math.round((articlesFound / totalArticles) * 100), 100);
 
     el.innerHTML = `
-      <div style="padding: 10px 0 24px;">
-        <p class="text-3" style="font-size: 14px; margin-bottom: 4px;">Ravi de vous revoir,</p>
-        <h1 class="clash text-gradient" style="font-size: 32px; letter-spacing: -1px;">${userName || 'Utilisateur'}</h1>
+      <!-- Header -->
+      <div class="header-home">
+        <div>
+          <p class="text-3" style="font-size: 14px; margin-bottom: 2px;">Bonjour 👋</p>
+          <h1 class="clash" style="font-size: 28px;">${userName || 'TU'}</h1>
+        </div>
+        <div class="avatar">${(userName || 'TU').substring(0, 2).toUpperCase()}</div>
       </div>
 
-      <!-- Hero Card Premium -->
-      <div class="card hero-card" style="padding: 24px; margin-bottom: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <!-- Hero Card V3 -->
+      <div class="card hero-card" style="padding: 24px; margin-bottom: 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
           <div>
-            <p style="font-size: 11px; font-weight: 800; color: var(--teal); margin-bottom: 6px; letter-spacing: 1px;">✧ SEMAINE ACTUELLE</p>
-            <h2 class="clash" style="font-size: 20px; margin-bottom: 2px;">Votre Panier Malin</h2>
-            <p class="text-3" style="font-size: 12px; color: rgba(255,255,255,0.5);">${listStats.people || '4'} personnes · Mode Écogestion</p>
+            <p style="font-size: 11px; font-weight: 800; color: #22c55e; margin-bottom: 4px; letter-spacing: 0.5px;">● SEMAINE DU 24 MARS</p>
+            <p class="text-3" style="font-size: 12px; color: var(--text3);">${listStats.people || '4'} personnes · Équilibré</p>
           </div>
-          <div class="badge badge-ia">IA Active 🤖</div>
+          <div class="badge badge-ouvert" style="background: rgba(30, 64, 175, 0.3); color: #60a5fa; border: none; padding: 4px 8px;">🌿 Saison</div>
         </div>
         
-        <div class="hero-stats">
-          <div class="hs">
-            <div class="hs-val">${listStats.count || '0'}</div>
-            <div class="hs-label">Articles</div>
+        <div class="hero-stats-v3">
+          <div class="hs-box">
+            <div class="hs-val-v3">${totalArticles}</div>
+            <div class="hs-label-v3">Articles</div>
           </div>
-          <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 5px 0;"></div>
-          <div class="hs">
-            <div class="hs-val">${listStats.total || '0.00€'}</div>
-            <div class="hs-label">Estimé</div>
+          <div class="hs-box">
+            <div class="hs-val-v3">${listStats.total || '53.70€'}</div>
+            <div class="hs-label-v3">Estimé</div>
           </div>
-          <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 5px 0;"></div>
-          <div class="hs">
-            <div class="hs-val">Saison</div>
-            <div class="hs-label">100% Frais</div>
+          <div class="hs-box">
+            <div class="hs-val-v3">68%</div>
+            <div class="hs-label-v3">Saison</div>
           </div>
         </div>
 
-        ${listStats.hasList ? `
-          <div class="mini-budget">
-            <div class="mb-header">
-              <span class="mb-title">Progression du budget</span>
-              <span class="mb-pct" style="color: ${budgetPct > 90 ? 'var(--red)' : budgetPct > 70 ? 'var(--amber)' : 'var(--green)'}">${budgetPct}%</span>
-            </div>
-            <div class="mb-track-home">
-              <div class="mb-fill-home" style="width: ${budgetPct}%; background: ${budgetPct > 90 ? 'var(--red)' : budgetPct > 70 ? 'var(--amber)' : 'linear-gradient(90deg, var(--green), var(--teal))'}"></div>
-            </div>
+        <div class="article-progress">
+          <div class="ap-header">
+            <span class="ap-title">Progression des courses</span>
+            <span class="ap-count">${articlesFound}/${totalArticles} articles</span>
           </div>
-        ` : ''}
+          <div class="ap-track">
+            <div class="ap-fill" style="width: ${progressPct}%;"></div>
+          </div>
+        </div>
         
-        <button class="btn-main" id="btn-go-list-home" style="margin-top: 24px;">
-          ${listStats.hasList ? 'Accéder à mon panier →' : 'Planifier ma semaine →'}
+        <button class="btn-main btn-green" id="btn-go-list-home" style="font-size: 15px; padding: 16px;">
+          Voir ma liste de courses →
         </button>
       </div>
 
-      <!-- Discovery Section -->
+      <!-- Quick Access Grid -->
       <div style="margin-bottom: 32px;">
-        <h3 class="clash" style="font-size: 18px; margin-bottom: 16px;">Services rapides</h3>
-        <div class="responsive-grid">
-          <div class="card clickable glass" id="btn-mode-courses" style="padding: 20px;">
-            <div style="font-size: 28px; margin-bottom: 12px;">🛍️</div>
-            <p style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">Mode courses</p>
-            <p class="text-3" style="font-size: 11px; margin-bottom: 12px;">Optimisation en rayon</p>
-            <div class="badge badge-en-cours">Prêt</div>
+        <h3 class="clash" style="font-size: 17px; margin-bottom: 20px;">Accès rapide</h3>
+        <div class="responsive-grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="card clickable" id="btn-mode-courses" style="padding: 20px; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between; background: #111827;">
+            <div>
+              <div style="font-size: 24px; margin-bottom: 12px;">🛒</div>
+              <p style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Mode courses</p>
+              <p class="text-3" style="font-size: 11px;">Navigation guidée en magasin</p>
+            </div>
+            <div class="badge badge-en-cours" style="align-self: flex-start; margin-top: 12px;">● En cours</div>
           </div>
           
-          <div class="card clickable glass" id="btn-quick-map" style="padding: 20px;">
-            <div style="font-size: 28px; margin-bottom: 12px;">🗺️</div>
-            <p style="font-weight: 700; font-size: 15px; margin-bottom: 4px;">Magasins proches</p>
-            <p class="text-3" style="font-size: 11px; margin-bottom: 12px;">Trouver le meilleur prix</p>
-            <div class="badge badge-ouvert">6 ouverts</div>
+          <div class="card clickable" id="btn-quick-map" style="padding: 20px; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between; background: #111827;">
+            <div>
+              <div style="font-size: 24px; margin-bottom: 12px;">📍</div>
+              <p style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Magasins</p>
+              <p class="text-3" style="font-size: 11px;">2 magasins favoris à proximité</p>
+            </div>
+            <div class="badge badge-ouvert" style="align-self: flex-start; margin-top: 12px;">● Ouvert</div>
+          </div>
+
+          <div class="card clickable" id="btn-quick-family" style="padding: 20px; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between; background: #111827;">
+            <div>
+              <div style="font-size: 24px; margin-bottom: 12px;">🧑‍🤝‍🧑</div>
+              <p style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Famille</p>
+              <p class="text-3" style="font-size: 11px;">Lucie a ajouté 2 articles</p>
+            </div>
+            <div class="badge badge-live" style="align-self: flex-start; margin-top: 12px;">● Live</div>
+          </div>
+
+          <div class="card clickable" id="btn-quick-new" style="padding: 20px; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between; background: #111827;">
+            <div>
+              <div style="font-size: 24px; margin-bottom: 12px;">✨</div>
+              <p style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">Nouvelle liste</p>
+              <p class="text-3" style="font-size: 11px;">Générée par IA selon la saison</p>
+            </div>
+            <div class="badge badge-ia" style="align-self: flex-start; margin-top: 12px; font-size: 9px;">IA ↗</div>
           </div>
         </div>
       </div>
 
-      <!-- Tip of the day -->
-      <div class="card tip-card clickable" style="margin-bottom: 32px;">
-        <div class="tip-icon">${dailyTip.icon}</div>
-        <div>
-          <p style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">Conseil Malin</p>
-          <p class="text-3" style="font-size: 12px;">${dailyTip.text}</p>
-        </div>
-      </div>
-
-      <!-- Secondary Actions -->
-      <div class="responsive-grid" style="grid-template-columns: 1fr 1fr; gap: 12px;">
-        <div class="card clickable" id="btn-quick-new" style="padding: 16px; border-style: dashed; background: transparent; border-color: var(--border2);">
-          <div style="font-size: 20px; margin-bottom: 8px;">✨</div>
-          <p style="font-weight: 600; font-size: 13px;">Nouvelle liste</p>
-        </div>
-        <div class="card clickable" id="btn-quick-family" style="padding: 16px; border-style: dashed; background: transparent; border-color: var(--border2);">
-          <div style="font-size: 20px; margin-bottom: 8px;">👥</div>
-          <p style="font-weight: 600; font-size: 13px;">Partager</p>
+      <!-- Forgotten Items -->
+      <div style="margin-bottom: 32px;">
+        <h3 class="clash" style="font-size: 17px; margin-bottom: 16px;">Articles souvent oubliés</h3>
+        <div class="h-scroll" style="gap: 12px;">
+          ${forgottenItems.map(item => `
+            <div class="forgotten-item">
+              <div class="fi-icon">${item.icon}</div>
+              <div class="fi-name">${item.name}</div>
+              <div class="fi-price">${item.price}</div>
+            </div>
+          `).join('')}
         </div>
       </div>
       
