@@ -47,7 +47,7 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
     if (diff > 0.01) {
       data.total_estime = currentTotal / m;
       data.categories = currentCategories;
-      if (onListChange) onListChange();
+      if (onListChange) onListChange(data);
     }
 
     const pct = Math.min((currentTotal / budget) * 100, 100);
