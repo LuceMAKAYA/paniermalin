@@ -1,5 +1,5 @@
 import { calculateTotal } from '../utils/price.js';
-// Fix #4: removed unused 'auth' import (was used by old save flow, now replaced by shopping.completeList)
+import { auth } from '../api/auth.js';
 import { shopping } from '../api/shopping.js';
 import { showToast } from './toast.js';
 
