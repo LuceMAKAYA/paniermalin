@@ -75,3 +75,26 @@ export function updateAnimal(id, field, value) {
 }
 
 export function getAnimals() { return state.animals; }
+
+/**
+ * Met à jour l'état global en masse (ex: depuis la DB)
+ */
+export function setState(newData) {
+  if (!newData) return;
+  if (newData.personnes) state.personnes = String(newData.personnes);
+  if (newData.budget) state.budget = Number(newData.budget);
+  if (newData.ville) state.ville = newData.ville;
+  if (newData.periode) state.periode = newData.periode;
+  if (newData.profilBudget) state.profilBudget = newData.profilBudget;
+  if (newData.habitudes) state.habitudes = newData.habitudes;
+  
+  if (newData.cuisines) state.cuisines = new Set(newData.cuisines);
+  if (newData.regimes) state.regimes = new Set(newData.regimes);
+  if (newData.extras) state.extras = new Set(newData.extras);
+  
+  if (newData.animals) {
+    state.animals = [...newData.animals];
+    state._animalCounter = Math.max(0, ...state.animals.map(a => a.id || 0));
+  }
+}
+

@@ -2,24 +2,25 @@ export function createHomeView(userName, listStats, onSwitchTab) {
   const el = document.createElement('div');
   el.className = 'home-view fade-in';
 
-  // Mock data for analytics & family
-  const chartData = [
-    { label: 'S-3', val: 40, amt: '48€' },
-    { label: 'S-2', val: 55, amt: '62€' },
-    { label: 'S-1', val: 45, amt: '52€' },
-    { label: 'Cette sem.', val: 75, amt: '78€', active: true }
-  ];
+  // Map real analytics
+  const chartData = (listStats.spendingHistory || []).map((h, i, arr) => ({
+    label: new Date(h.week_start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+    val: Math.min(Math.round((h.total_amount / (h.budget_goal || 15000)) * 100), 100),
+    amt: (h.total_amount / 100).toFixed(0) + '€',
+    active: i === arr.length - 1
+  }));
+  
+  // Fallback if no history
+  if (chartData.length === 0) {
+    chartData.push({ label: 'Sem. 1', val: 0, amt: '0€', active: true });
+  }
 
-  const familyActivity = [
-    { name: 'Lucie', initials: 'LU', color: '#16a34a', text: 'A ajouté : Yaourts nature, Jus d’orange', time: 'Il y a 3 min' },
-    { name: 'Marc', initials: 'MA', color: '#1d4ed8', text: 'A coché : Pain de mie ✓, Beurre ✓', time: 'Il y a 12 min' },
-    { name: 'Emma', initials: 'EM', color: '#7c3aed', text: 'A commenté : "prendre du fromage râpé aussi"', time: 'Hier' }
-  ];
+  const familyActivity = listStats.recentActivity || [];
 
   const render = () => {
-    const articlesFound = listStats.articlesFound || 12;
-    const totalArticles = listStats.count || 18;
-    const progressPct = Math.min(Math.round((articlesFound / totalArticles) * 100), 100);
+    const articlesFound = listStats.articlesFound || 0;
+    const totalArticles = listStats.count || 0;
+    const progressPct = totalArticles > 0 ? Math.min(Math.round((articlesFound / totalArticles) * 100), 100) : 0;
 
     el.innerHTML = `
       <!-- Header -->
@@ -89,11 +90,11 @@ export function createHomeView(userName, listStats, onSwitchTab) {
           <div class="hs-label-v3">Articles</div>
         </div>
         <div class="hs-box" style="padding: 16px 12px;">
-          <div class="hs-val-v3" style="color: #60a5fa;">68%</div>
+          <div class="hs-val-v3" style="color: #60a5fa;">${seasonalPct}%</div>
           <div class="hs-label-v3">Saisonnier</div>
         </div>
         <div class="hs-box" style="padding: 16px 12px;">
-          <div class="hs-val-v3" style="color: #fbbf24;">-4 kg</div>
+          <div class="hs-val-v3" style="color: #fbbf24;">-${co2Saved} kg</div>
           <div class="hs-label-v3">CO₂ Économisé</div>
         </div>
       </div>
@@ -201,26 +202,26 @@ export function createHomeView(userName, listStats, onSwitchTab) {
         </div>
       </div>
 
-      <!-- Activity Family -->
-      <div class="card" style="padding: 24px; background: #111827; border: 1px solid var(--border);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h3 class="clash" style="font-size: 16px;">Activité famille</h3>
-          <div class="badge badge-live">● Live</div>
-        </div>
-        
+      <!-- Activity Feed -->
+      <div class="card family-card" style="padding: 24px; margin-bottom: 32px;">
+        <h3 class="clash" style="font-size: 18px; margin-bottom: 20px;">Activité famille</h3>
         <div class="activity-list">
-          ${familyActivity.map(a => `
-            <div class="activity-item">
-              <div class="act-avatar" style="background: ${a.color}; color: white;">${a.initials}</div>
-              <div class="act-content">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span class="act-name">${a.name}</span>
-                  <span class="act-time">${a.time}</span>
-                </div>
-                <p class="act-text">${a.text}</p>
+          ${familyActivity.map(act => {
+            const initials = act.initials || (act.name ? act.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2) : '??');
+            const color = act.color || '#3b82f6';
+            return `
+            <div class="activity-item" style="display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start;">
+              <div class="user-avatar-sm" style="background: ${color}; width: 36px; height: 36px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: white;">
+                ${initials}
+              </div>
+              <div style="flex: 1;">
+                <p style="font-size: 13px; font-weight: 500; margin-bottom: 2px;">
+                  <span style="font-weight: 800;">${act.name}</span> ${act.text}
+                </p>
+                <p class="text-3" style="font-size: 11px;">${act.time}</p>
               </div>
             </div>
-          `).join('')}
+          `}).join(familyActivity.length === 0 ? '<p class="text-3" style="font-size: 13px; text-align: center; padding: 20px;">Aucune activité récente</p>' : '')}
         </div>
       </div>
       

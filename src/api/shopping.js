@@ -77,8 +77,7 @@ export const shopping = {
       .eq('user_id', userId)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .maybeSingle();
 
     if (listError || !list) return null;
 
@@ -131,6 +130,32 @@ export const shopping = {
   },
 
   /**
+   * Récupère l'historique complet des listes
+   */
+  async getHistory(userId, familyId = null) {
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    }
+    if (!userId && !familyId) return [];
+
+    let query = supabase
+      .from('shopping_lists')
+      .select('*');
+    
+    if (familyId) {
+      query = query.eq('family_id', familyId);
+    } else {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
    * Ferme une liste (marqué comme terminée)
    */
   async completeList(listId, actualSpent) {
@@ -144,6 +169,46 @@ export const shopping = {
     
     if (error) throw error;
   },
+  /**
+   * Récupère les stats de dépenses hebdomadaires
+   */
+  async getWeeklySpending(userId) {
+    if (!userId) return [];
+    const { data, error } = await supabase
+      .from('weekly_spending')
+      .select('*')
+      .eq('user_id', userId)
+      .order('week_start', { ascending: true })
+      .limit(4);
+    
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Récupère les dernières activités de la liste (cochage d'articles)
+   */
+  async getRecentActivity(listId) {
+    if (!listId) return [];
+    const { data, error } = await supabase
+      .from('list_items')
+      .select(`
+        id, name, is_checked, updated_at,
+        profiles!list_items_checked_by_fkey ( full_name )
+      `)
+      .eq('list_id', listId)
+      .not('checked_by', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(5);
+
+    if (error) throw error;
+    return data.map(item => ({
+      name: item.profiles?.full_name || 'Quelqu\'un',
+      text: `${item.is_checked ? 'A coché' : 'A décoché'} : ${item.name}`,
+      time: new Date(item.updated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    }));
+  },
+
   /**
    * S'abonne aux changements temps réel d'une liste
    */

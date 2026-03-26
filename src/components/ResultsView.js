@@ -220,8 +220,8 @@ export function createResultsView(data, budget, onBack, storeData, onListChange)
         await shopping.saveActiveList({ 
           ...data, 
           categories: currentCategories,
-          budget_goal: budget 
-        }, session?.id);
+          total_estime: (currentCategories.reduce((acc, c) => acc + c.articles.reduce((a, b) => a + (b.prix_estime || 0), 0), 0)).toFixed(2)
+        }, session?.id, familyData?.id);
         showToast('✅ Course enregistrée avec succès !');
         btn.textContent = 'Enregistré !';
         setTimeout(() => {

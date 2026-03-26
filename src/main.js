@@ -15,13 +15,18 @@ import { getState } from './store.js';
 
 import { auth } from './api/auth.js';
 import { shopping } from './api/shopping.js';
+import { family } from './api/family.js';
+import { profile } from './api/profile.js';
 import { supabase } from './supabase.js';
+import { setState } from './store.js';
 
 // ── App State ─────────────────────────────────────────────
 let currentUser = auth.getSession();
 let activeTab = 'home'; // home, list, map, profile, setup
 let currentListData = null;
 let currentStoreData = currentUser?.storeData || null;
+let spendingHistory = [];
+let recentActivity = [];
 
 // ── Elements ──────────────────────────────────────────────
 const app = document.getElementById('app');
@@ -61,7 +66,9 @@ function renderActiveTab() {
         count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : 0,
         articlesFound: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.filter(a => a.done).length, 0) : 0,
         total: currentListData ? (currentListData.total_estime).toFixed(2) + '€' : '0.00€',
-        budgetGoal: getState().budget
+        budgetGoal: getState().budget,
+        spendingHistory: spendingHistory,
+        recentActivity: recentActivity
       };
       scrollArea.appendChild(createHomeView(currentUser.name, stats, switchTab));
       break;
@@ -77,9 +84,11 @@ function renderActiveTab() {
           </div>
         `;
       } else {
-        const listEl = createResultsView(currentListData, getState().budget, () => switchTab('setup'), currentStoreData, async () => {
+        const listEl = createResultsView(currentListData, getState().budget, userFamily, currentStoreData, async (newList) => {
+          currentListData = newList;
           // Re-sync if changed
           console.log("List changed locally, syncing stats...");
+          renderActiveTab();
         });
         scrollArea.appendChild(listEl);
       }
@@ -162,8 +171,23 @@ async function handleGenerate() {
     currentListData = data;
     currentStoreData = storeData;
     
-    // Save minimal metadata to profile (like town)
-    await auth.updateSessionData({ city: state.ville });
+    // Save to Supabase (Phase 3)
+    if (currentUser) {
+      const pUpdate = profile.updateProfile(currentUser.id, {
+        city: state.ville,
+        address: state.ville,
+        latitude: window.__userCoords?.lat,
+        longitude: window.__userCoords?.lon
+      });
+      const prefUpdate = profile.updateFoodPreferences(currentUser.id, {
+        household_size: parseInt(state.personnes) || 2,
+        dietary_regime: state.regimes,
+        cuisines: state.cuisines,
+        extra_categories: state.extras,
+        budget_profile: state.profilBudget
+      });
+      await Promise.all([pUpdate, prefUpdate]);
+    }
 
     updateLoadingStep(4);
     await new Promise(r => setTimeout(r, 400));
@@ -212,15 +236,43 @@ async function boot() {
   if (user) {
     currentUser = { ...user, name: user.user_metadata?.full_name || user.email };
     
-    // 2. Fetch active list from database
+    // 2. Fetch profile, preferences, list & family from database
     try {
-      const activeList = await shopping.getActiveList(user.id);
+      const [fData, pData, prefs] = await Promise.all([
+        family.getUserFamily(user.id),
+        profile.getProfile(user.id),
+        profile.getFoodPreferences(user.id)
+      ]);
+
+      userFamily = fData;
+      
+      // Hydrate local store with real preferences (Phase 3)
+      if (pData || prefs) {
+        setState({
+          ville: pData?.city,
+          personnes: prefs?.household_size,
+          regimes: prefs?.dietary_regime,
+          cuisines: prefs?.cuisines,
+          extras: prefs?.extra_categories,
+          profilBudget: prefs?.budget_profile
+        });
+        if (pData?.latitude) {
+          window.__userCoords = { lat: pData.latitude, lon: pData.longitude };
+        }
+      }
+
+      const activeList = await shopping.getActiveList(user.id, userFamily?.id);
+      
+      // Fetch Spending History
+      spendingHistory = await shopping.getWeeklySpending(user.id, userFamily?.id);
+
       if (activeList) {
         currentListData = activeList;
+        recentActivity = await shopping.getRecentActivity(activeList.id, userFamily?.id);
         
         // 3. Subscribe to real-time changes
         if (listSubscription) listSubscription.unsubscribe();
-        listSubscription = shopping.subscribeToList(activeList.id, (payload) => {
+        listSubscription = shopping.subscribeToList(activeList.id, async (payload) => {
           if (payload.eventType === 'UPDATE') {
             const updatedItem = payload.new;
             // Update local state
@@ -231,21 +283,22 @@ async function boot() {
                 }
               });
             });
-            // Re-render ONLY if we are on a tab that uses this data
+            // Refresh activity feed
+            recentActivity = await shopping.getRecentActivity(activeList.id);
+            
             if (activeTab === 'home' || activeTab === 'list') {
               renderActiveTab();
             }
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-            // Simplify: just fetch full list again for now to maintain category structure
-            shopping.getActiveList(user.id).then(newList => {
-              currentListData = newList;
-              renderActiveTab();
-            });
+            const newList = await shopping.getActiveList(user.id);
+            currentListData = newList;
+            recentActivity = await shopping.getRecentActivity(activeList.id);
+            renderActiveTab();
           }
         });
       }
     } catch (e) {
-      console.warn("Could not fetch active list", e);
+      console.warn("Could not fetch active list or stats", e);
     }
   }
 
