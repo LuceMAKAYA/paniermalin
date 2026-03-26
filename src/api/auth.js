@@ -13,14 +13,14 @@ export const auth = {
         data: { full_name: name }
       }
     });
-    if (error) throw error;
-    
-    // Create initial profile
-    await supabase.from('profiles').upsert({
-      id: data.user.id,
-      full_name: name
-    });
 
+    if (error) {
+      console.error("Signup error details:", error);
+      throw error;
+    }
+
+    // No manual profiles upsert here to avoid conflicts with triggers
+    // The login() function handles self-healing if the profile is missing
     const userData = { ...data.user, name: name, type: 'user' };
     this.saveSession(userData);
     return userData;

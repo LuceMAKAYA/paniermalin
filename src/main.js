@@ -61,12 +61,13 @@ function renderActiveTab() {
 
   switch (activeTab) {
     case 'home':
+      const hasCats = currentListData && currentListData.categories;
       const stats = {
-        hasList: !!currentListData,
+        hasList: !!hasCats,
         people: getState().personnes,
-        count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : 0,
-        articlesFound: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.filter(a => a.done).length, 0) : 0,
-        total: currentListData ? (currentListData.total_estime).toFixed(2) + '€' : '0.00€',
+        count: hasCats ? currentListData.categories.reduce((acc, c) => acc + (c.articles?.length || 0), 0) : 0,
+        articlesFound: hasCats ? currentListData.categories.reduce((acc, c) => acc + (c.articles?.filter(a => a.done).length || 0), 0) : 0,
+        total: currentListData && typeof currentListData.total_estime === 'number' ? currentListData.total_estime.toFixed(2) + '€' : '0.00€',
         budgetGoal: getState().budget,
         spendingHistory: spendingHistory,
         recentActivity: recentActivity
@@ -171,11 +172,13 @@ async function handleGenerate() {
     
     currentListData = data;
     currentStoreData = storeData;
+    console.log("AI Generation Successful. Data:", data);
     
     // Auto-save the generated list (Phase 3)
     if (currentUser && currentUser.type === 'user') {
       try {
-        await shopping.saveShoppingList(currentUser.id, currentListData, userFamily?.id);
+        console.log("Saving generated list to Supabase...");
+        await shopping.saveActiveList(currentListData, currentUser.id, userFamily?.id);
         console.log("List persisted to Supabase");
       } catch (saveErr) {
         console.warn("Failed to auto-save list to DB:", saveErr);

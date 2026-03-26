@@ -23,8 +23,8 @@ export const shopping = {
       .insert({
         user_id: userId,
         family_id: familyId,
-        title: `Liste du ${new Date().toLocaleDateString('fr-FR')}`,
-        total_budget: listData.budget_goal || 150,
+        title: listData.title || `Liste du ${new Date().toLocaleDateString('fr-FR')}`,
+        total_budget: Number(listData.total_budget || listData.budget_goal || 0),
         season_month: new Date().getMonth() + 1,
         status: 'active'
       })
@@ -35,20 +35,24 @@ export const shopping = {
 
     // 2. Préparer les articles pour insertion en masse
     const items = [];
-    listData.categories.forEach(cat => {
-      cat.articles.forEach(art => {
-        items.push({
-          list_id: list.id,
-          name: art.nom,
-          emoji: cat.emoji,
-          category: cat.nom,
-          quantity: art.quantite,
-          unit_price: Math.round((art.prix_estime || 0) * 100), // En centimes
-          is_seasonal: !!art.is_seasonal,
-          is_auto_added: true
-        });
+    if (listData.categories && Array.isArray(listData.categories)) {
+      listData.categories.forEach(cat => {
+        if (cat.articles && Array.isArray(cat.articles)) {
+          cat.articles.forEach(art => {
+            items.push({
+              list_id: list.id,
+              name: art.nom,
+              emoji: cat.emoji || '📦',
+              category: cat.nom,
+              quantity: art.quantite || '1',
+              unit_price: Math.round((art.prix_estime || 0) * 100), // En centimes
+              is_seasonal: !!art.is_seasonal,
+              is_auto_added: true
+            });
+          });
+        }
       });
-    });
+    }
 
     if (items.length > 0) {
       const { error: itemsError } = await supabase

@@ -3,12 +3,15 @@ import { auth } from '../api/auth.js';
 import { shopping } from '../api/shopping.js';
 import { showToast } from './toast.js';
 
-export function createResultsView(data, budget, onBack, storeData, onListChange) {
+export function createResultsView(data, budget, userFamily, storeData, onListChange) {
   if (!data || !data.categories) {
     const empty = document.createElement('div');
     empty.style.padding = '40px'; empty.style.textAlign = 'center';
     empty.innerHTML = `<h2 class="clash">Aucune donnée</h2><button class="btn-main" id="btn-empty-back">Retour</button>`;
-    setTimeout(() => { empty.querySelector('#btn-empty-back').onclick = onBack; }, 0);
+    setTimeout(() => { 
+      const b = empty.querySelector('#btn-empty-back');
+      if (b) b.onclick = () => window.__switchTab('setup'); 
+    }, 0);
     return empty;
   }
   const el = document.createElement('div');
@@ -39,8 +42,9 @@ export function createResultsView(data, budget, onBack, storeData, onListChange)
     const m = selectedStore ? getMultiplier(selectedStore.name) : 1;
     const currentTotal = calculateTotal(currentCategories, m);
     
-    // Sync back to original data if needed for other views
-    if (data.total_estime !== currentTotal / m) {
+    // Sync back to original data if needed for other views (with small tolerance to avoid loops)
+    const diff = Math.abs(data.total_estime - currentTotal / m);
+    if (diff > 0.01) {
       data.total_estime = currentTotal / m;
       data.categories = currentCategories;
       if (onListChange) onListChange();
@@ -124,7 +128,7 @@ export function createResultsView(data, budget, onBack, storeData, onListChange)
          <button class="btn-ghost" id="btn-print">🖨️ Imprimer</button>
          <button class="btn-ghost" id="btn-share">🔗 Partager</button>
       </div>
-      <button class="btn-ghost no-print" id="btn-re-gen" style="margin-top: 12px; border-style: dashed;">✏️ Nouveau panier IA</button>
+      <button class="btn-ghost no-print" id="btn-re-gen" style="margin-top: 12px; border-style: dashed;" onclick="window.__switchTab('setup')">✏️ Modifier mes préférences</button>
       <div style="height: 40px;"></div>
     `;
 
@@ -221,7 +225,7 @@ export function createResultsView(data, budget, onBack, storeData, onListChange)
           ...data, 
           categories: currentCategories,
           total_estime: (currentCategories.reduce((acc, c) => acc + c.articles.reduce((a, b) => a + (b.prix_estime || 0), 0), 0)).toFixed(2)
-        }, session?.id, familyData?.id);
+        }, session?.id, userFamily?.id);
         showToast('✅ Course enregistrée avec succès !');
         btn.textContent = 'Enregistré !';
         setTimeout(() => {
