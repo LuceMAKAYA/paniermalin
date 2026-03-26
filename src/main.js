@@ -27,6 +27,7 @@ let currentListData = null;
 let currentStoreData = currentUser?.storeData || null;
 let spendingHistory = [];
 let recentActivity = [];
+let userFamily = null;
 
 // ── Elements ──────────────────────────────────────────────
 const app = document.getElementById('app');

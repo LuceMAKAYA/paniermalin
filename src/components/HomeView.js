@@ -20,7 +20,9 @@ export function createHomeView(userName, listStats, onSwitchTab) {
   const render = () => {
     const articlesFound = listStats.articlesFound || 0;
     const totalArticles = listStats.count || 0;
-    const progressPct = totalArticles > 0 ? Math.min(Math.round((articlesFound / totalArticles) * 100), 100) : 0;
+    const seasonalPct  = listStats.seasonalPct || 85;
+    const co2Saved     = listStats.co2Saved || 12;
+    const progressPct  = totalArticles > 0 ? Math.min(Math.round((articlesFound / totalArticles) * 100), 100) : 0;
 
     el.innerHTML = `
       <!-- Header -->

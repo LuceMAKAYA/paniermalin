@@ -36,7 +36,10 @@ export function createFormView(onGenerate) {
         <button class="btn-main" id="btn-next-step">
           ${currentStep === totalSteps - 1 ? '🪄 Générer ma liste !' : 'Continuer →'}
         </button>
-        ${currentStep > 0 ? `<button class="btn-ghost" id="btn-prev-step">Précédent</button>` : ''}
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+          ${currentStep > 0 ? `<button class="btn-ghost" id="btn-prev-step" style="flex: 1; margin: 0;">Précédent</button>` : ''}
+          ${currentStep < totalSteps - 1 ? `<button class="btn-ghost" id="btn-skip-step" style="flex: 1; margin: 0; color: var(--text3);">Passer</button>` : ''}
+        </div>
       </div>
     `;
 
@@ -102,30 +105,36 @@ export function createFormView(onGenerate) {
 
       case 3: // BUDGET
         return `
-          <h2 class="clash mb-20">💶 Période & Budget</h2>
-          <p class="text-2 mb-20" style="font-size: 14px;">Définissez votre durée et votre enveloppe.</p>
-          <p class="field-label" style="font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 12px;">DURÉE DES COURSES</p>
+          <h2 class="clash mb-20">💶 Budget & Fréquence</h2>
+          <p class="text-2 mb-20" style="font-size: 14px;">Comment gérez-vous vos courses ?</p>
+          
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-            ${[['1 semaine','7 jours'],['2 semaines','14 jours'],['3 semaines','21 jours'],['1 mois','~30 jours']].map(([v,s]) => `
-              <div class="card ${state.periode === v ? 'on' : ''} periode-card" data-val="${v}" style="padding: 14px; text-align: center; cursor: pointer;">
-                <p class="clash" style="font-size: 14px;">${v}</p>
-                <p class="text-3" style="font-size: 10px;">${s}</p>
+            <div>
+              <p class="field-label" style="font-size: 10px; font-weight: 700; color: var(--text3); margin-bottom: 8px;">FRÉQUENCE</p>
+              <div style="display: flex; gap: 4px; background: var(--bg2); padding: 4px; border-radius: 10px;">
+                <button class="freq-btn ${state.periode.includes('semaine') ? 'on' : ''}" data-val="1 semaine" style="flex:1; border:none; border-radius:8px; font-size:10px; padding:8px 0; background:${state.periode.includes('semaine') ? 'var(--card)' : 'transparent'}; color:white;">SEMAINE</button>
+                <button class="freq-btn ${state.periode.includes('mois') ? 'on' : ''}" data-val="1 mois" style="flex:1; border:none; border-radius:8px; font-size:10px; padding:8px 0; background:${state.periode.includes('mois') ? 'var(--card)' : 'transparent'}; color:white;">MOIS</button>
               </div>
-            `).join('')}
-          </div>
-          <p class="field-label" style="font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 12px;">PROFIL BUDGET</p>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-            <div class="card ${state.profilBudget === 'tres_econome' ? 'on' : ''} profil-card" data-val="tres_econome" style="padding: 14px; cursor: pointer;">
-              <p class="clash" style="font-size: 14px;">💸 Très économe</p>
             </div>
-            <div class="card ${state.profilBudget === 'equilibre' ? 'on' : ''} profil-card" data-val="equilibre" style="padding: 14px; cursor: pointer;">
-              <p class="clash" style="font-size: 14px;">⚖️ Équilibré</p>
+            <div>
+              <p class="field-label" style="font-size: 10px; font-weight: 700; color: var(--text3); margin-bottom: 8px;">STRATÉGIE</p>
+              <div style="display: flex; gap: 4px; background: var(--bg2); padding: 4px; border-radius: 10px;">
+                <button class="profil-card ${state.profilBudget === 'equilibre' ? 'on' : ''}" data-val="equilibre" style="flex:1; border:none; border-radius:8px; font-size:10px; padding:8px 0; background:${state.profilBudget === 'equilibre' ? 'var(--card)' : 'transparent'}; color:white;">⚖️ ÉQUILIBRE</button>
+                <button class="profil-card ${state.profilBudget === 'tres_econome' ? 'on' : ''}" data-val="tres_econome" style="flex:1; border:none; border-radius:8px; font-size:10px; padding:8px 0; background:${state.profilBudget === 'tres_econome' ? 'var(--card)' : 'transparent'}; color:white;">💸 ÉCONOME</button>
+              </div>
             </div>
           </div>
-          <p class="field-label" style="font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 12px;">BUDGET TOTAL</p>
-          <div class="card">
-            <input type="range" id="budget-slider" min="20" max="800" step="5" value="${state.budget}" style="width:100%;">
-            <p class="clash" style="font-size: 32px; color: var(--accent); text-align: right; margin-top: 10px;">${state.budget}€</p>
+
+          <p class="field-label" style="font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 12px;">BUDGET ESTIMÉ POUR ${state.periode.toUpperCase()}</p>
+          <div class="card" style="padding: 24px; background: linear-gradient(135deg, var(--card), rgba(61,127,255,0.05));">
+            <input type="range" id="budget-slider" min="20" max="${state.periode.includes('mois') ? 1200 : 400}" step="10" value="${state.budget}" style="width:100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+               <div>
+                 <p class="text-3" style="font-size: 11px;">Budget cible :</p>
+                 <p class="text-3" style="font-size: 9px; opacity: 0.6;">(Ajustable par l'IA)</p>
+               </div>
+               <p class="clash" style="font-size: 36px; color: var(--accent);">${state.budget}€</p>
+            </div>
           </div>
         `;
 
@@ -154,6 +163,7 @@ export function createFormView(onGenerate) {
   const attachEvents = () => {
     const nextBtn = el.querySelector('#btn-next-step');
     const prevBtn = el.querySelector('#btn-prev-step');
+    const skipBtn = el.querySelector('#btn-skip-step');
 
     if (nextBtn) nextBtn.onclick = () => {
       if (currentStep === totalSteps - 1) onGenerate();
@@ -161,6 +171,10 @@ export function createFormView(onGenerate) {
     };
     if (prevBtn) prevBtn.onclick = () => {
       if (currentStep > 0) { currentStep--; render(); }
+    };
+    if (skipBtn) skipBtn.onclick = () => {
+      currentStep++;
+      render();
     };
 
     // Step-specific events
@@ -221,8 +235,17 @@ export function createFormView(onGenerate) {
       el.querySelector('#input-habitudes').oninput = (e) => setHabitudes(e.target.value);
     }
     if (currentStep === 3) {
-      el.querySelectorAll('.periode-card').forEach(c => c.onclick = () => { setPeriode(c.dataset.val); render(); });
-      el.querySelectorAll('.profil-card').forEach(c => c.onclick = () => { setProfilBudget(c.dataset.val); render(); });
+      el.querySelectorAll('.freq-btn').forEach(c => c.onclick = () => { 
+        setPeriode(c.dataset.val); 
+        // Adjust budget defaults
+        if (c.dataset.val === '1 mois' && getBudget() < 200) setBudget(450);
+        if (c.dataset.val === '1 semaine' && getBudget() > 400) setBudget(120);
+        render(); 
+      });
+      el.querySelectorAll('.profil-card').forEach(c => c.onclick = () => { 
+        setProfilBudget(c.dataset.val); 
+        render(); 
+      });
       const slider = el.querySelector('#budget-slider');
       slider.oninput = (e) => {
         setBudget(e.target.value);

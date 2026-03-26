@@ -97,39 +97,24 @@ export const auth = {
     this.saveSession(updated);
 
     if (session.type === 'user') {
+      const updateData = {
+        updated_at: new Date().toISOString()
+      };
+      if (data.full_name || data.name) updateData.full_name = data.full_name || data.name;
+      if (data.city || data.ville) updateData.city = data.city || data.ville;
+      if (data.address) updateData.address = data.address;
+      if (data.avatar_url) updateData.avatar_url = data.avatar_url;
+      if (data.listData) updateData.list_data = data.listData;
+      if (data.storeData) updateData.store_data = data.storeData;
+
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: session.id,
-          list_data: data.listData || session.listData,
-          store_data: data.storeData || session.storeData,
-          ville: data.ville || session.ville,
-          updated_at: new Date().toISOString()
-        });
-      if (error) console.error("Supabase sync error:", error);
-    }
-  },
-
-  /** Update user data in both session and Supabase profile */
-  async updateSessionData(data) {
-    const session = this.getSession();
-    if (!session) return;
-    
-    const updated = { ...session, ...data };
-    this.saveSession(updated);
-
-    if (session.type === 'user') {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: session.id,
-          full_name: data.full_name || session.name,
-          city: data.city || session.city,
-          address: data.address || session.address,
-          avatar_url: data.avatar_url || session.avatar_url,
-          updated_at: new Date().toISOString()
+          ...updateData
         });
       if (error) console.error("Supabase sync error:", error);
     }
   }
+
 };
