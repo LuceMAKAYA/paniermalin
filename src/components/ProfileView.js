@@ -15,7 +15,10 @@ export function createProfileView(user) {
 
   const render = (history = []) => {
     const totalSpent = (history.reduce((acc, h) => acc + (h.actual_spent || h.total_budget || 0), 0) / 100).toFixed(0);
-    const avgSeasonal = 82; 
+    // Fix: Calculate real average seasonal score from history
+    const avgSeasonal = history.length > 0 
+      ? Math.round(history.reduce((acc, h) => acc + (h.seasonal_pct || 0), 0) / history.length)
+      : 0; 
 
     el.innerHTML = `
       <div class="animate-fade-up" style="text-align: center; padding: 20px 0 40px;">
@@ -50,6 +53,7 @@ export function createProfileView(user) {
       </div>
 
       <!-- Family Section -->
+      ${user?.type === 'user' ? `
       <div class="animate-fade-up" style="margin-bottom: 32px; animation-delay: 0.2s;">
         <h3 class="clash" style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; padding-left: 4px;">
           <span style="width: 32px; height: 32px; background: rgba(59,130,246,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">🏠</span>
@@ -59,6 +63,7 @@ export function createProfileView(user) {
           ${renderFamilyContent()}
         </div>
       </div>
+      ` : ''}
 
       <!-- Food Prefs Section -->
       <div class="animate-fade-up" style="margin-bottom: 32px; animation-delay: 0.3s;">
@@ -164,10 +169,10 @@ export function createProfileView(user) {
             if (typeof profile !== 'undefined' && profile.updateFoodPreferences) {
               await profile.updateFoodPreferences(user.id, { ...userPrefs, budget_goal: newBudget });
               userPrefs.budget_goal = newBudget;
-              alert('Budget mis à jour !');
+              showToast('✅ Budget mis à jour !');
             }
           } catch (err) {
-            alert('Erreur: ' + err.message);
+            showToast('❌ Erreur: ' + err.message);
           } finally {
             btnSaveBudget.disabled = false;
             btnSaveBudget.textContent = 'Mettre à jour';

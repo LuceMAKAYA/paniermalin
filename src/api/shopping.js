@@ -166,7 +166,17 @@ export const shopping = {
    * Ferme une liste (marqué comme terminée)
    */
   async completeList(listId, actualSpent) {
-    const { error } = await supabase
+    // 1. Get the list data to archive it
+    const { data: list } = await supabase
+      .from('shopping_lists')
+      .select('*')
+      .eq('id', listId)
+      .single();
+
+    if (!list) throw new Error('Liste introuvable');
+
+    // 2. Mark as completed
+    const { error: updateError } = await supabase
       .from('shopping_lists')
       .update({ 
         status: 'completed',
@@ -174,7 +184,32 @@ export const shopping = {
       })
       .eq('id', listId);
     
-    if (error) throw error;
+    if (updateError) throw updateError;
+
+    // 3. Calculate seasonal percentage for the archive
+    let seasonal_pct = 85;
+    if (list.categories) {
+      const all = list.categories.flatMap(c => c.articles || []);
+      if (all.length > 0) {
+        const seasonal = all.filter(a => a.is_seasonal).length;
+        seasonal_pct = Math.round((seasonal / all.length) * 100);
+      }
+    }
+
+    // 4. Archive into weekly_spending (Phase 5)
+    // We use the current date as week_start for simplicity
+    const { error: spendError } = await supabase
+      .from('weekly_spending')
+      .insert({
+        user_id: list.user_id,
+        family_id: list.family_id,
+        week_start: new Date().toISOString().split('T')[0],
+        total_budget: list.total_budget,
+        actual_spent: Math.round(actualSpent * 100),
+        seasonal_pct
+      });
+
+    if (spendError) console.error("Error archiving to weekly_spending:", spendError);
   },
   /**
    * Récupère les stats de dépenses hebdomadaires

@@ -129,9 +129,20 @@ function renderSetup() {
 }
 
 // ── Navigation ────────────────────────────────────────────
+async function refreshStats() {
+  if (currentUser && currentUser.type === 'user') {
+    spendingHistory = await shopping.getWeeklySpending(currentUser.id, userFamily?.id);
+  }
+}
+window.__refreshStats = refreshStats;
+
 function switchTab(tabId) {
   activeTab = tabId;
-  renderActiveTab();
+  if (tabId === 'home' || tabId === 'profile') {
+    refreshStats().then(() => renderActiveTab());
+  } else {
+    renderActiveTab();
+  }
 }
 window.__switchTab = switchTab;
 
@@ -288,6 +299,12 @@ async function boot() {
         });
         if (pData?.latitude) {
           window.__userCoords = { lat: pData.latitude, lon: pData.longitude };
+        }
+        // Fix: Fetch nearby stores at boot if city exists
+        if (pData?.city) {
+          fetchNearbyStores(pData.city).then(data => {
+            currentStoreData = data;
+          });
         }
       }
 

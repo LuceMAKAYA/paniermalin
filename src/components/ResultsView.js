@@ -250,23 +250,33 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
 
     el.querySelector('#btn-save-course').onclick = async () => {
       const btn = el.querySelector('#btn-save-course');
+      const currentUser = auth.getSession();
+
+      if (currentUser?.type === 'guest') {
+        showToast('✨ Course terminée (Mode Invité)');
+        if (onListChange) onListChange(null);
+        window.__switchTab('home');
+        return;
+      }
+
+      if (!data.id) {
+        showToast('⚠️ Liste non sauvegardée en DB');
+        return;
+      }
+
       btn.disabled = true;
       btn.textContent = 'Archivage...';
-      
+
       try {
-        const total = currentCategories.reduce((acc, c) => acc + c.articles.reduce((a, b) => a + (b.prix_estime || 0), 0), 0);
-        await shopping.completeList(data.id, total);
-        showToast('✅ Course terminée et archivée !');
-        btn.textContent = 'Terminée !';
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.textContent = '✅ Terminer la course';
-        }, 2000);
+        await shopping.completeList(data.id, currentTotal/m);
+        showToast('✅ Course archivée avec succès !');
+        if (onListChange) onListChange(null);
+        window.__switchTab('home');
       } catch (err) {
-        showToast("❌ Erreur lors de l'archivage");
+        showToast('❌ Erreur lors de l\'archivage');
         console.error(err);
         btn.disabled = false;
-        btn.textContent = '✅ Terminer la course';
+        btn.textContent = 'Terminer la course';
       }
     };
 
