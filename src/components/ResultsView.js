@@ -53,32 +53,58 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
     const pct = Math.min((currentTotal / budget) * 100, 100);
 
     el.innerHTML = `
-      <h2 class="clash no-print" style="font-size: 22px; margin-bottom: 20px;">Ma Liste Optimisée</h2>
-
-      <!-- Budget Bar -->
-      <div class="budget-bar">
-        <div class="bb-track">
-          <div class="bb-fill" style="width: ${pct}%"></div>
+      <div class="glass animate-fade-up" style="padding: 24px; border-radius: 0 0 24px 24px; margin: -10px -24px 24px; border-top: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <h2 class="clash" style="font-size: 24px; color: var(--text); line-height: 1.1;">Ma Liste</h2>
+            <p class="text-3" style="font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px;">Optimisée par l'IA</p>
+          </div>
+          <div style="text-align: right;">
+            <p class="clash" style="font-size: 28px; color: var(--accent); line-height: 1;">${currentTotal.toFixed(2)}€</p>
+            <p class="text-3" style="font-size: 10px; font-weight: 600;">budget: ${budget}€</p>
+          </div>
         </div>
-        <div style="text-align: right;">
-          <p class="bb-amt">${currentTotal.toFixed(2)}€</p>
-          <p class="text-3" style="font-size: 10px;">Sur ${budget}€ max</p>
+
+        <!-- Budget Bar -->
+        <div class="budget-bar" style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+          <div class="bb-fill" style="width: ${pct}%; height: 100%; background: ${pct > 90 ? 'var(--red)' : 'var(--accent-grad)'}; transition: width 1s ease; box-shadow: 0 0 10px ${pct > 90 ? 'rgba(239,68,68,0.4)' : 'rgba(59,130,246,0.4)'};"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+             <p class="text-3" style="font-size: 10px; font-weight: 700;">DÉPENSÉ : ${Math.round(pct)}%</p>
+             <p style="font-size: 10px; font-weight: 800; color: ${currentTotal <= budget ? 'var(--green)' : 'var(--red)'};">
+               ${currentTotal <= budget ? '✓ SOUS BUDGET' : '⚠️ HORS BUDGET'}
+             </p>
         </div>
       </div>
 
+      <!-- IA Suggestion Banner (NEW) -->
+      ${data.conseil ? `
+        <div class="card animate-fade-up" style="background: linear-gradient(135deg, rgba(167, 139, 250, 0.15) 0%, rgba(167, 139, 250, 0.05) 100%); border-color: rgba(167, 139, 250, 0.3); padding: 16px 20px; display: flex; gap: 15px; align-items: center; margin-bottom: 24px;">
+          <div style="font-size: 24px; animation: pulse 2s infinite;">✨</div>
+          <p style="font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4;">
+            <span style="color: var(--purple); font-weight: 800; font-size: 11px; display: block; margin-bottom: 2px;">L'IA SUGGÈRE</span>
+            ${data.conseil}
+          </p>
+        </div>
+      ` : ''}
+
       <!-- Store Selector -->
       ${storeData?.rawStores?.length ? `
-        <div class="no-print" style="margin-bottom: 24px;">
-          <p class="field-label" style="font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 12px;">COMPAREZ LES ENSEIGNES</p>
+        <div class="no-print" style="margin-bottom: 30px;">
+          <p class="field-label" style="font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 12px; letter-spacing: 0.5px;">COMPAREZ LES ENSEIGNES</p>
           <div class="h-scroll">
             ${storeData.rawStores.slice(0, 5).map(s => {
               const active = selectedStore?.name === s.name;
               const storePrice = (currentTotal / m * getMultiplier(s.name)).toFixed(2);
+              const cat = getStoreCategory(s.name);
               return `
-                <div class="card store-card ${active ? 'active' : ''}" data-name="${s.name}" style="flex: 0 0 140px; margin-bottom: 0; padding: 12px; cursor: pointer;">
-                  <p class="clash" style="font-size: 13px; margin-bottom: 2px;">${s.name}</p>
-                  <p class="green" style="font-weight: 700; font-size: 15px;">${storePrice}€</p>
-                  <p class="text-3" style="font-size: 9px;">${s.dist}m · ${getStoreCategory(s.name)}</p>
+                <div class="card glass store-card ${active ? 'active' : ''}" data-name="${s.name}" style="flex: 0 0 150px; margin-bottom: 0; padding: 16px; cursor: pointer; border-color: ${active ? 'var(--accent)' : 'var(--border)'}; background: ${active ? 'rgba(59,130,246,0.1)' : 'var(--card)'};">
+                  <p class="clash" style="font-size: 14px; margin-bottom: 4px; color: ${active ? 'var(--accent)' : 'var(--text)'};">${s.name}</p>
+                  <p style="font-weight: 800; font-size: 18px; color: var(--green); margin-bottom: 4px;">${storePrice}€</p>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="text-3" style="font-size: 9px; font-weight: 700;">${s.dist}m</span>
+                    <span class="badge" style="font-size: 8px; background: rgba(255,255,255,0.05);">${cat}</span>
+                  </div>
                 </div>
               `;
             }).join('')}
@@ -87,48 +113,57 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
       ` : ''}
 
       <!-- Articles List -->
-      <div id="articles-list" class="responsive-grid" style="margin-top: 10px;">
+      <div id="articles-list" class="responsive-grid" style="margin-top: 10px; gap: 20px;">
         ${currentCategories.map((cat, catIdx) => `
-          <div class="card" style="margin-bottom: 0; background: transparent; padding: 0; border: none;">
-            <h3 class="clash" style="font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-              <span>${cat.emoji} ${cat.nom}</span>
-              <span class="text-3" style="font-size: 11px;">${cat.articles.length} articles</span>
+          <div class="animate-fade-up" style="animation-delay: ${catIdx * 0.1}s;">
+            <h3 class="clash" style="font-size: 16px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; padding-left: 4px;">
+              <span style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 32px; height: 32px; background: var(--bg2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;">${cat.emoji}</span>
+                ${cat.nom}
+              </span>
+              <span class="badge" style="background: var(--bg2); color: var(--text2);">${cat.articles.length}</span>
             </h3>
-            ${cat.articles.map((a, artIdx) => {
-              const done = a.done;
-              return `
-                <div class="li-item ${done ? 'done' : ''}" data-cat="${catIdx}" data-art="${artIdx}">
-                  <div class="chk">${done ? '✓' : ''}</div>
-                  <div style="flex: 1;">
-                    <p style="font-weight: 600; font-size: 14px;">${a.nom}</p>
-                    <p class="text-3" style="font-size: 11px;">${a.quantite}</p>
-                  </div>
-                  <div style="text-align: right; display: flex; align-items: center; gap: 8px;">
-                    <p class="clash" style="font-size: 15px;">${(a.prix_estime * m).toFixed(2)}€</p>
-                    <div class="delete-item-btn no-print" data-cat="${catIdx}" data-art="${artIdx}">✕</div>
-                  </div>
-                </div>
-              `;
-            }).join('')}
             
-            <!-- Quick Add for this category -->
-            <div class="add-item-bar no-print" data-cat="${catIdx}">
-              <input type="text" placeholder="Ajouter un article..." data-cat="${catIdx}">
-              <div style="color: var(--accent); font-weight: 700; cursor: pointer; padding: 0 8px;" class="do-quick-add" data-cat="${catIdx}">+</div>
+            <div class="card" style="padding: 4px; background: rgba(255,255,255,0.01); border-color: var(--border);">
+              ${cat.articles.map((a, artIdx) => {
+                const done = a.done;
+                return `
+                  <div class="li-item ${done ? 'done' : ''}" data-cat="${catIdx}" data-art="${artIdx}" style="padding: 14px 16px; border-radius: 12px; margin-bottom: 2px; transition: all 0.2s;">
+                    <div class="chk" style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid ${done ? 'var(--green)' : 'var(--border2)'}; background: ${done ? 'var(--green)' : 'transparent'}; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900;">${done ? '✓' : ''}</div>
+                    <div style="flex: 1; margin-left: 14px;">
+                      <p style="font-weight: 600; font-size: 14px; color: ${done ? 'var(--text3)' : 'var(--text)'}; text-decoration: ${done ? 'line-through' : 'none'}; transition: all 0.3s;">${a.nom}</p>
+                      <p class="text-3" style="font-size: 11px; font-weight: 600;">${a.quantite}</p>
+                    </div>
+                    <div style="text-align: right; display: flex; align-items: center; gap: 12px;">
+                      <p class="clash" style="font-size: 15px; color: ${done ? 'var(--text3)' : 'var(--text)'};">${(a.prix_estime * m).toFixed(2)}€</p>
+                      <div class="delete-item-btn no-print" data-cat="${catIdx}" data-art="${artIdx}" style="opacity: 0.3; font-size: 14px; cursor: pointer;">✕</div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+              
+              <!-- Quick Add -->
+              <div class="add-item-bar no-print" data-cat="${catIdx}" style="padding: 10px 16px; background: transparent; border-top: 1px solid var(--border); margin-top: 4px;">
+                <input type="text" placeholder="Ajouter un article..." data-cat="${catIdx}" style="background:transparent; border:none; color:var(--text); font-size:13px; font-weight:500; outline:none; width:100%;">
+                <div style="color: var(--accent); font-weight: 900; cursor: pointer; font-size: 20px;" class="do-quick-add" data-cat="${catIdx}">+</div>
+              </div>
             </div>
           </div>
         `).join('')}
       </div>
 
-      <div class="no-print" style="margin-top: 40px; display: grid; grid-template-columns: 1fr; gap: 12px;">
-         <button class="btn-main" id="btn-save-course" style="padding: 16px; font-size: 16px;">✅ Enregistrer la course</button>
+      <div class="no-print" style="margin-top: 40px; display: grid; grid-template-columns: 1fr; gap: 16px; padding-bottom: 20px;">
+         <button class="btn-premium" id="btn-save-course">
+           ✅ Terminer la course
+         </button>
+         
+         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <button class="btn-ghost" id="btn-print" style="margin:0;">🖨️ Imprimer</button>
+            <button class="btn-ghost" id="btn-share" style="margin:0;">🔗 Partager</button>
+         </div>
+         
+         <button class="btn-ghost" id="btn-re-gen" style="margin-top: 8px; border-style: dashed; opacity: 0.7;" onclick="window.__switchTab('setup')">✏️ Modifier mes préférences</button>
       </div>
-
-      <div class="no-print" style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-         <button class="btn-ghost" id="btn-print">🖨️ Imprimer</button>
-         <button class="btn-ghost" id="btn-share">🔗 Partager</button>
-      </div>
-      <button class="btn-ghost no-print" id="btn-re-gen" style="margin-top: 12px; border-style: dashed;" onclick="window.__switchTab('setup')">✏️ Modifier mes préférences</button>
       <div style="height: 40px;"></div>
     `;
 
@@ -217,26 +252,22 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
     el.querySelector('#btn-save-course').onclick = async () => {
       const btn = el.querySelector('#btn-save-course');
       btn.disabled = true;
-      btn.textContent = 'Chargement...';
+      btn.textContent = 'Archivage...';
       
       try {
-        const session = auth.getSession();
-        await shopping.saveActiveList({ 
-          ...data, 
-          categories: currentCategories,
-          total_estime: (currentCategories.reduce((acc, c) => acc + c.articles.reduce((a, b) => a + (b.prix_estime || 0), 0), 0)).toFixed(2)
-        }, session?.id, userFamily?.id);
-        showToast('✅ Course enregistrée avec succès !');
-        btn.textContent = 'Enregistré !';
+        const total = currentCategories.reduce((acc, c) => acc + c.articles.reduce((a, b) => a + (b.prix_estime || 0), 0), 0);
+        await shopping.completeList(data.id, total);
+        showToast('✅ Course terminée et archivée !');
+        btn.textContent = 'Terminée !';
         setTimeout(() => {
           btn.disabled = false;
-          btn.textContent = '✅ Enregistrer la course';
+          btn.textContent = '✅ Terminer la course';
         }, 2000);
       } catch (err) {
-        showToast('❌ Erreur lors de la sauvegarde');
+        showToast("❌ Erreur lors de l'archivage");
         console.error(err);
         btn.disabled = false;
-        btn.textContent = '✅ Enregistrer la course';
+        btn.textContent = '✅ Terminer la course';
       }
     };
 

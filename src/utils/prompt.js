@@ -70,11 +70,12 @@ ANIMAUX : ${animauxStr}
 RÈGLE : La liste doit permettre de tenir ${periode} sans retourner au magasin. ${localStoresInstruction}${instructionsStr}
 
 Réponds UNIQUEMENT en JSON valide :
-{"categories":[{"nom":"...","emoji":"...","articles":[{"nom":"...","quantite":"...","prix_estime":0.00}]}],"magasins_recommandes":["...","..."],"total_estime":0.00,"conseil":"..."}
+{"categories":[{"nom":"...","emoji":"...","articles":[{"nom":"...","quantite":"...","prix_estime":0.00,"is_seasonal":true}]}],"magasins_recommandes":["...","..."],"total_estime":0.00,"conseil":"..."}
 
 Règles Finales : 
 - Ne pas oublier les catégories "Extra" (${extras}).
 - Adapter les quantités à ${state.personnes} personnes pour ${periode}.
+- Saisonalité : Ajoute "is_seasonal": true pour chaque produit frais (fruits, légumes, viande, poisson) qui est actuellement de saison et idéalement produit localement. Pour l'épicerie sèche ou hors saison, false.
 - CONSEIL : Ajoute un conseil d'expert et précise que les prix sont des estimations indicatives.${magasinsRule}`;
 }
 

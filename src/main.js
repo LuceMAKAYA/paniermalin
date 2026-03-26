@@ -70,7 +70,19 @@ function renderActiveTab() {
         total: currentListData && typeof currentListData.total_estime === 'number' ? currentListData.total_estime.toFixed(2) + '€' : '0.00€',
         budgetGoal: getState().budget,
         spendingHistory: spendingHistory,
-        recentActivity: recentActivity
+        recentActivity: recentActivity,
+        seasonalPct: (() => {
+          if (!hasCats) return 0;
+          const allArt = currentListData.categories.flatMap(c => c.articles || []);
+          if (allArt.length === 0) return 0;
+          return Math.round((allArt.filter(a => a.is_seasonal).length / allArt.length) * 100);
+        })(),
+        co2Saved: (() => {
+          if (!hasCats) return 0;
+          const allArt = currentListData.categories.flatMap(c => c.articles || []);
+          // On estime 1.5kg de CO2 économisé par article de saison/local
+          return Math.round(allArt.filter(a => a.is_seasonal).length * 1.5);
+        })()
       };
       scrollArea.appendChild(createHomeView(currentUser.name, stats, switchTab));
       break;

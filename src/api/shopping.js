@@ -105,7 +105,8 @@ export const shopping = {
         nom: item.name,
         quantite: item.quantity,
         prix_estime: item.unit_price / 100,
-        done: item.is_checked
+        done: item.is_checked,
+        is_seasonal: item.is_seasonal
       });
     });
 

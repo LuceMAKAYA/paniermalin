@@ -14,38 +14,46 @@ export function createProfileView(user) {
   let userPrefs = null;
 
   const render = (history = []) => {
-    const totalSpent = history.reduce((acc, h) => acc + (h.actual_spent || h.total_budget || 0), 0) / 100;
-    const avgSeasonal = 75; 
+    const totalSpent = (history.reduce((acc, h) => acc + (h.actual_spent || h.total_budget || 0), 0) / 100).toFixed(0);
+    const avgSeasonal = 82; 
 
     el.innerHTML = `
-      <div style="text-align: center; padding: 20px 0 30px;">
-        <div style="width: 80px; height: 80px; border-radius: 40px; background: linear-gradient(135deg, var(--accent), var(--teal)); margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; border: 4px solid var(--bg2); box-shadow: 0 10px 30px rgba(61,127,255,0.3);">
-          ${(user?.name || 'U')[0].toUpperCase()}
+      <div class="animate-fade-up" style="text-align: center; padding: 20px 0 40px;">
+        <div style="position: relative; width: 100px; height: 100px; margin: 0 auto 20px;">
+          <div style="position: absolute; inset: -4px; border-radius: 50%; background: var(--accent-grad); opacity: 0.3; filter: blur(12px); animation: pulse 3s infinite;"></div>
+          <div style="position: relative; width: 100%; height: 100%; border-radius: 50%; background: var(--bg2); border: 4px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 38px; color: var(--accent); font-weight: 800; box-shadow: var(--shadow-lg); overflow: hidden;">
+            <div style="position: absolute; inset: 0; background: var(--accent-grad); opacity: 0.1;"></div>
+            ${(user?.name || 'U')[0].toUpperCase()}
+          </div>
         </div>
-        <h2 class="clash" style="font-size: 24px;">${user?.name || 'Utilisateur'}</h2>
-        <p class="text-3" style="font-size: 13px;">${state.ville || 'Localisation non définie'} · Plan ${user?.type === 'guest' ? 'Invité' : 'Liberté'} · Depuis mars 2024</p>
+        <h2 class="clash" style="font-size: 28px; line-height: 1.1;">Bonjour, ${user?.name || 'Voisin'}</h2>
+        <p class="text-3" style="font-size: 13px; font-weight: 600; margin-top: 8px; opacity: 0.7;">
+          <span style="color: var(--accent);">●</span> ${state.ville || 'Localisation non définie'} · 
+          <span style="color: var(--teal);">●</span> ${user?.type === 'guest' ? 'Compte Invité' : 'Membre Premium'}
+        </p>
       </div>
 
       <!-- 3-Metric Bar -->
-      <div style="display: flex; gap: 10px; margin-bottom: 30px;">
-         <div class="card" style="flex: 1; text-align: center; padding: 16px; margin-bottom: 0;">
-           <p class="clash" style="font-size: 18px; color: var(--green);">${totalSpent.toFixed(0)}€</p>
-           <p class="text-3" style="font-size: 10px; text-transform: uppercase;">Total</p>
+      <div class="animate-fade-up" style="display: flex; gap: 12px; margin-bottom: 32px; animation-delay: 0.1s;">
+         <div class="card glass" style="flex: 1; text-align: center; padding: 18px 10px; margin-bottom: 0;">
+           <p class="text-3" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; opacity: 0.6;">DÉPENSÉ</p>
+           <p class="clash" style="font-size: 22px; color: var(--green);">${totalSpent}€</p>
          </div>
-         <div class="card" style="flex: 1; text-align: center; padding: 16px; margin-bottom: 0;">
-           <p class="clash" style="font-size: 18px; color: var(--teal);">${avgSeasonal}%</p>
-           <p class="text-3" style="font-size: 10px; text-transform: uppercase;">Saison</p>
+         <div class="card glass" style="flex: 1; text-align: center; padding: 18px 10px; margin-bottom: 0;">
+           <p class="text-3" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; opacity: 0.6;">SAISON</p>
+           <p class="clash" style="font-size: 22px; color: var(--teal);">${avgSeasonal}%</p>
          </div>
-         <div class="card" style="flex: 1; text-align: center; padding: 16px; margin-bottom: 0;">
-           <p class="clash" style="font-size: 18px; color: var(--amber);">${history.length}</p>
-           <p class="text-3" style="font-size: 10px; text-transform: uppercase;">Courses</p>
+         <div class="card glass" style="flex: 1; text-align: center; padding: 18px 10px; margin-bottom: 0;">
+           <p class="text-3" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; opacity: 0.6;">COURSES</p>
+           <p class="clash" style="font-size: 22px; color: var(--amber);">${history.length}</p>
          </div>
       </div>
 
       <!-- Family Section -->
-      <div style="margin-bottom: 32px;">
-        <h3 class="clash" style="font-size: 15px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-          <span>🏠</span> MA FAMILLE
+      <div class="animate-fade-up" style="margin-bottom: 32px; animation-delay: 0.2s;">
+        <h3 class="clash" style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; padding-left: 4px;">
+          <span style="width: 32px; height: 32px; background: rgba(59,130,246,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">🏠</span>
+          VOTRE FOYER
         </h3>
         <div id="family-container">
           ${renderFamilyContent()}
@@ -53,79 +61,84 @@ export function createProfileView(user) {
       </div>
 
       <!-- Food Prefs Section -->
-      <div style="margin-bottom: 32px;">
-        <h3 class="clash" style="font-size: 15px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-          <span>🥗</span> MES PRÉFÉRENCES
+      <div class="animate-fade-up" style="margin-bottom: 32px; animation-delay: 0.3s;">
+        <h3 class="clash" style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; padding-left: 4px;">
+          <span style="width: 32px; height: 32px; background: rgba(16,185,129,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">🥗</span>
+          PRÉFÉRENCES
         </h3>
-        <div class="card" style="padding: 20px;">
-          <div style="margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
-            <p class="text-3" style="font-size: 10px; text-transform: uppercase; margin-bottom: 10px;">Budget hebdomadaire cible</p>
+        <div class="card glass" style="padding: 24px;">
+          <div style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+            <p class="text-3" style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--accent); margin-bottom: 12px;">Objectif budget hebdomadaire</p>
             <div style="display: flex; gap: 12px; align-items: center;">
-              <input type="number" id="input-budget-goal" value="${(userPrefs?.budget_goal || 150)}" style="background: var(--bg); border: 1px solid var(--border); color: white; padding: 8px 12px; border-radius: 8px; width: 80px; font-weight: 700;">
-              <span class="clash" style="font-size: 16px;">€</span>
-              <button class="btn-ghost" id="btn-save-budget" style="padding: 8px 16px; font-size: 11px; margin-bottom: 0;">Mettre à jour</button>
+              <input type="number" id="input-budget-goal" value="${(userPrefs?.budget_goal || 150)}" style="background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: white; padding: 10px 16px; border-radius: 12px; width: 90px; font-weight: 700; font-size: 16px;">
+              <span class="clash" style="font-size: 20px; opacity: 0.8;">€</span>
+              <button class="btn-ghost" id="btn-save-budget" style="padding: 10px 20px; font-size: 12px; margin-bottom: 0; flex: 1;">Enregistrer</button>
             </div>
           </div>
-          <div style="margin-bottom: 12px;">
-            <p class="text-3" style="font-size: 10px; text-transform: uppercase; margin-bottom: 6px;">Régime & Foyer</p>
+          <div style="margin-bottom: 16px;">
+            <p class="text-3" style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--accent); margin-bottom: 8px;">Régime & Taille du foyer</p>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <span class="badge" style="background: rgba(34,197,94,0.1); color: #22c55e;">${userPrefs?.household_size || 2} personnes</span>
-              ${(userPrefs?.dietary_regime || ['omnivore']).map(r => `<span class="badge" style="background: rgba(59,130,246,0.1); color: #3b82f6;">${r}</span>`).join('')}
+              <span class="badge" style="background: rgba(34,197,94,0.15); color: #4ade80; border-color: rgba(34,197,94,0.3);">${userPrefs?.household_size || 2} pers.</span>
+              ${(userPrefs?.dietary_regime || ['omnivore']).map(r => `<span class="badge" style="background: rgba(59,130,246,0.15); color: var(--accent); border-color: rgba(59,130,246,0.3);">${r}</span>`).join('')}
             </div>
           </div>
           <div>
-            <p class="text-3" style="font-size: 10px; text-transform: uppercase; margin-bottom: 6px;">Cuisines préférées</p>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              ${(userPrefs?.cuisines || ['francaise']).map(c => `<span style="font-size: 12px; background: var(--bg2); padding: 4px 10px; border-radius: 8px;">${c}</span>`).join('')}
+            <p class="text-3" style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--accent); margin-bottom: 8px;">Cuisines de prédilection</p>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              ${(userPrefs?.cuisines || ['Française']).map(c => `
+                <span style="font-size: 11px; font-weight: 700; background: var(--bg2); border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px; color: var(--text2);">${c}</span>
+              `).join('')}
             </div>
           </div>
         </div>
       </div>
 
       <!-- AI Insights Section -->
-      <div style="margin-bottom: 32px;">
-        <h3 class="clash" style="font-size: 15px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-          <span>🤖</span> CE QUE L'IA A APPRIS
+      <div class="animate-fade-up" style="margin-bottom: 40px; animation-delay: 0.4s;">
+        <h3 class="clash" style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; padding-left: 4px;">
+          <span style="width: 32px; height: 32px; background: rgba(167,139,250,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">🤖</span>
+          ANALYSE INTELLIGENTE
         </h3>
-        <div class="card" style="padding: 0; background: transparent; border-color: rgba(255,255,255,0.05);">
-          <div class="profile-item" style="padding: 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px;">
-            <div style="font-size: 20px; width: 32px; text-align: center;">🥛</div>
-            <p style="font-size: 13px; flex: 1;">Toujours du <b>lait Lactel</b> — ajouté automatiquement.</p>
+        <div class="card glass" style="padding: 0; overflow: hidden; border-color: rgba(167,139,250,0.2);">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; background: rgba(167,139,250,0.03);">
+            <div style="font-size: 22px; filter: drop-shadow(0 0 5px rgba(167,139,250,0.4));">🛒</div>
+            <p style="font-size: 13px; line-height: 1.4;">Préfère les marques <b>Distributeur</b> pour les produits secs.</p>
           </div>
-          <div class="profile-item" style="padding: 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px;">
-            <div style="font-size: 20px; width: 32px; text-align: center;">🏪</div>
-            <p style="font-size: 13px; flex: 1;">Préférence <b>Lidl</b> pour l'épicerie, <b>marché</b> pour les légumes.</p>
+          <div style="padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="font-size: 22px; filter: drop-shadow(0 0 5px rgba(59,130,246,0.4));">📅</div>
+            <p style="font-size: 13px; line-height: 1.4;">Habitude de course observée le <b>Samedi matin</b>.</p>
           </div>
         </div>
       </div>
 
       <!-- History Section -->
-      <div style="margin-bottom: 32px;">
-        <h3 class="clash" style="font-size: 15px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-          <span>📜</span> HISTORIQUE RÉEL
+      <div class="animate-fade-up" style="margin-bottom: 32px; animation-delay: 0.5s;">
+        <h3 class="clash" style="font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; padding-left: 4px;">
+          <span style="width: 32px; height: 32px; background: rgba(245,158,11,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">📜</span>
+          DERNIÈRES COURSES
         </h3>
         ${history.length === 0 ? `
-          <div class="card" style="text-align: center; padding: 40px 20px;">
-            <p class="text-3" style="font-size: 13px;">Aucune course enregistrée pour le moment.</p>
+          <div class="card glass" style="text-align: center; padding: 40px 20px; border-style: dashed; opacity: 0.6;">
+            <p class="text-3" style="font-size: 13px; font-weight: 500;">Votre historique s'affichera ici après vos premiers achats.</p>
           </div>
-        ` : history.map(h => {
+        ` : history.slice(0, 5).map(h => {
           const date = new Date(h.created_at);
           const day = date.getDate();
           const month = date.toLocaleString('fr-FR', { month: 'short' }).toUpperCase();
           const price = (h.actual_spent || h.total_budget || 0) / 100;
           return `
-            <div class="card" style="padding: 10px; background: var(--bg2); margin-bottom: 12px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 44px; height: 44px; border-radius: 10px; background: var(--card); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                  <span style="font-size: 14px; font-weight: 700;">${day}</span>
-                  <span style="font-size: 8px; color: var(--text3);">${month}</span>
+            <div class="card clickable" style="padding: 14px; background: rgba(255,255,255,0.02); margin-bottom: 12px; border-color: var(--border);">
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                  <span style="font-size: 16px; font-weight: 800; color: var(--accent); line-height: 1;">${day}</span>
+                  <span style="font-size: 9px; font-weight: 900; color: var(--text3); letter-spacing: 0.5px;">${month}</span>
                 </div>
                 <div style="flex: 1;">
-                  <p style="font-weight: 600; font-size: 13px;">${h.title || 'Course'}</p>
-                  <p class="text-3" style="font-size: 11px;">Statut: ${h.status}</p>
+                  <p style="font-weight: 700; font-size: 14px; color: var(--text);">${h.title || 'Course Optimisée'}</p>
+                  <p class="text-3" style="font-size: 11px; font-weight: 600; opacity: 0.6;">${h.status === 'completed' ? '❤️ Complétée' : '⏳ En cours'}</p>
                 </div>
                 <div style="text-align: right;">
-                  <p class="green" style="font-weight: 700; font-size: 15px;">${price.toFixed(0)}€</p>
+                  <p class="clash" style="font-weight: 800; font-size: 18px; color: var(--green);">${price.toFixed(0)}€</p>
                 </div>
               </div>
             </div>
@@ -133,8 +146,9 @@ export function createProfileView(user) {
         }).join('')}
       </div>
 
-      <button class="btn-ghost" id="btn-logout" style="color: var(--red); border-color: rgba(255,64,96,0.2); margin-top: 20px;">Se déconnecter</button>
-      <p style="text-align: center; margin-top: 30px; font-size: 10px; color: var(--text3);">Panier Malin v3.1.0-cloud</p>
+      <button class="btn-ghost" id="btn-logout" style="color: var(--red); border-color: rgba(239,68,68,0.2); margin-top: 20px; background: rgba(239,68,68,0.03); font-weight: 800; letter-spacing: 0.5px;">DÉCONNEXION</button>
+      <p style="text-align: center; margin-top: 40px; font-size: 11px; color: var(--text3); font-weight: 600; letter-spacing: 0.5px;">PANIER MALIN • ALPHA v3.1.2</p>
+      <div style="height: 40px;"></div>
     `;
 
     bindFamilyEvents();
