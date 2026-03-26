@@ -56,20 +56,35 @@ export const profile = {
    * Met à jour ou crée les préférences alimentaires
    */
   async updateFoodPreferences(userId, prefs) {
-    // On utilise upsert pour créer ou mettre à jour
-    const { error } = await supabase
+    // On vérifie d'abord s'il existe une préférence
+    const { data: existing } = await supabase
       .from('food_preferences')
-      .upsert({
-        user_id: userId,
-        household_size: prefs.household_size || 2,
-        dietary_regime: prefs.dietary_regime || ['omnivore'],
-        cuisines: prefs.cuisines || ['francaise'],
-        extra_categories: prefs.extra_categories || [],
-        pets: prefs.pets || [],
-        budget_profile: prefs.budget_profile || 'equilibre',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (error) throw error;
+    const payload = {
+      user_id: userId,
+      household_size: prefs.household_size || 2,
+      dietary_regime: prefs.dietary_regime || ['omnivore'],
+      cuisines: prefs.cuisines || ['francaise'],
+      extra_categories: prefs.extra_categories || [],
+      pets: prefs.pets || [],
+      budget_profile: prefs.budget_profile || 'equilibre',
+      updated_at: new Date().toISOString()
+    };
+
+    if (existing) {
+      const { error } = await supabase
+        .from('food_preferences')
+        .update(payload)
+        .eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('food_preferences')
+        .insert(payload);
+      if (error) throw error;
+    }
   }
 };

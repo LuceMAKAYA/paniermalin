@@ -2,6 +2,7 @@ import { getState } from '../store.js';
 import { auth } from '../api/auth.js';
 import { shopping } from '../api/shopping.js';
 import { family } from '../api/family.js';
+import { profile } from '../api/profile.js';
 
 export function createProfileView(user) {
   const el = document.createElement('div');
@@ -138,6 +139,29 @@ export function createProfileView(user) {
 
     bindFamilyEvents();
 
+    const btnSaveBudget = el.querySelector('#btn-save-budget');
+    if (btnSaveBudget) {
+      btnSaveBudget.onclick = async () => {
+        const newBudget = parseInt(el.querySelector('#input-budget-goal').value);
+        if (newBudget > 0) {
+          btnSaveBudget.disabled = true;
+          btnSaveBudget.textContent = '...';
+          try {
+            if (typeof profile !== 'undefined' && profile.updateFoodPreferences) {
+              await profile.updateFoodPreferences(user.id, { ...userPrefs, budget_goal: newBudget });
+              userPrefs.budget_goal = newBudget;
+              alert('Budget mis à jour !');
+            }
+          } catch (err) {
+            alert('Erreur: ' + err.message);
+          } finally {
+            btnSaveBudget.disabled = false;
+            btnSaveBudget.textContent = 'Mettre à jour';
+          }
+        }
+      };
+    }
+
     el.querySelector('#btn-logout').onclick = () => {
       if (confirm('Voulez-vous vous déconnecter ?')) {
         auth.logout();
@@ -219,7 +243,7 @@ export function createProfileView(user) {
       const [hist, famData, prefsData] = await Promise.all([
         shopping.getHistory(user?.id),
         family.getUserFamily(user?.id),
-        profile.getFoodPreferences(user?.id)
+        (typeof profile !== 'undefined' && profile?.getFoodPreferences) ? profile.getFoodPreferences(user?.id) : Promise.resolve(null)
       ]);
       
       userFamily = famData;

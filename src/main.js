@@ -172,22 +172,36 @@ async function handleGenerate() {
     currentListData = data;
     currentStoreData = storeData;
     
+    // Auto-save the generated list (Phase 3)
+    if (currentUser && currentUser.type === 'user') {
+      try {
+        await shopping.saveShoppingList(currentUser.id, currentListData, userFamily?.id);
+        console.log("List persisted to Supabase");
+      } catch (saveErr) {
+        console.warn("Failed to auto-save list to DB:", saveErr);
+      }
+    }
+    
     // Save to Supabase (Phase 3)
-    if (currentUser) {
-      const pUpdate = profile.updateProfile(currentUser.id, {
-        city: state.ville,
-        address: state.ville,
-        latitude: window.__userCoords?.lat,
-        longitude: window.__userCoords?.lon
-      });
-      const prefUpdate = profile.updateFoodPreferences(currentUser.id, {
-        household_size: parseInt(state.personnes) || 2,
-        dietary_regime: state.regimes,
-        cuisines: state.cuisines,
-        extra_categories: state.extras,
-        budget_profile: state.profilBudget
-      });
-      await Promise.all([pUpdate, prefUpdate]);
+    if (currentUser && currentUser.type === 'user') {
+      try {
+        const pUpdate = profile.updateProfile(currentUser.id, {
+          city: state.ville || '',
+          address: state.ville || '',
+          latitude: window.__userCoords?.lat || null,
+          longitude: window.__userCoords?.lon || null
+        });
+        const prefUpdate = profile.updateFoodPreferences(currentUser.id, {
+          household_size: parseInt(state.personnes) || 2,
+          dietary_regime: state.regimes || ['omnivore'],
+          cuisines: state.cuisines || ['francaise'],
+          extra_categories: state.extras || [],
+          budget_profile: state.profilBudget || 'equilibre'
+        });
+        await Promise.all([pUpdate, prefUpdate]);
+      } catch (dbErr) {
+        console.warn("Could not save preferences to DB, but continuing...", dbErr);
+      }
     }
 
     updateLoadingStep(4);
@@ -196,9 +210,10 @@ async function handleGenerate() {
     activeTab = 'list';
     renderActiveTab();
   } catch (err) {
+    console.error("Critical Generation Error:", err);
     activeTab = 'setup';
     renderActiveTab();
-    alert("Erreur: " + err.message);
+    alert("Désolé, une erreur est survenue lors de la génération. Veuillez réessayer.");
   }
 }
 
