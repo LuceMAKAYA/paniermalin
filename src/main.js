@@ -14,11 +14,13 @@ import { buildPrompt } from './utils/prompt.js';
 import { getState } from './store.js';
 
 import { auth } from './api/auth.js';
+import { shopping } from './api/shopping.js';
+import { supabase } from './supabase.js';
 
 // ── App State ─────────────────────────────────────────────
 let currentUser = auth.getSession();
 let activeTab = 'home'; // home, list, map, profile, setup
-let currentListData = currentUser?.listData || null;
+let currentListData = null;
 let currentStoreData = currentUser?.storeData || null;
 
 // ── Elements ──────────────────────────────────────────────
@@ -34,10 +36,8 @@ function renderActiveTab() {
   if (!currentUser) {
     container.appendChild(createLandingView((user) => {
       currentUser = user;
-      currentListData = user?.listData || null;
-      currentStoreData = user?.storeData || null;
       activeTab = 'home';
-      renderActiveTab();
+      boot(); // Full boot after login
     }));
     return;
   }
@@ -77,10 +77,9 @@ function renderActiveTab() {
           </div>
         `;
       } else {
-        const listEl = createResultsView(currentListData, getState().budget, () => switchTab('setup'), currentStoreData, () => {
-          // Re-render nav if summary changed (though summary is on home)
-          // Just update local session data so HomeView will pick it up when switched back
-          auth.updateSessionData({ listData: currentListData });
+        const listEl = createResultsView(currentListData, getState().budget, () => switchTab('setup'), currentStoreData, async () => {
+          // Re-sync if changed
+          console.log("List changed locally, syncing stats...");
         });
         scrollArea.appendChild(listEl);
       }
@@ -88,7 +87,6 @@ function renderActiveTab() {
 
     case 'map':
       scrollArea.appendChild(createMapView(currentStoreData, (storeName) => {
-        // Find store in data and maybe switch to list with it
         alert(`Magasin sélectionné : ${storeName}. Vous pouvez maintenant voir les prix pour ce magasin dans l'onglet Liste.`);
         switchTab('list');
       }));
@@ -112,7 +110,7 @@ function switchTab(tabId) {
   activeTab = tabId;
   renderActiveTab();
 }
-window.__switchTab = switchTab; // Globale pour accès inline
+window.__switchTab = switchTab;
 
 function renderBottomNav() {
   let nav = app.querySelector('.bottom-nav');
@@ -139,7 +137,6 @@ function renderBottomNav() {
 
 // ── Generate Handler ──────────────────────────────────────
 async function handleGenerate() {
-  // Transfer selection to loading animation
   activeTab = 'loading';
   renderLoading();
 
@@ -165,10 +162,8 @@ async function handleGenerate() {
     currentListData = data;
     currentStoreData = storeData;
     
-    // Save to session for persistence
-    await auth.updateSessionData({ listData: data, storeData: storeData });
-    
-    // Automatic save removed - User will now use the "Enregistrer" button
+    // Save minimal metadata to profile (like town)
+    await auth.updateSessionData({ city: state.ville });
 
     updateLoadingStep(4);
     await new Promise(r => setTimeout(r, 400));
@@ -209,20 +204,51 @@ function updateLoadingStep(idx) {
 }
 
 // ── Boot ──────────────────────────────────────────────────
+let listSubscription = null;
+
 async function boot() {
-  // If we have a local session, try to refresh it from Supabase if it's a real user
-  if (currentUser && currentUser.type === 'user') {
+  // 1. Get current auth user directly from Supabase
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    currentUser = { ...user, name: user.user_metadata?.full_name || user.email };
+    
+    // 2. Fetch active list from database
     try {
-      // Small delay to let Supabase SDK init
-      await new Promise(r => setTimeout(r, 500));
-      const user = await auth.login(currentUser.email, currentUser.password); // Simple way to refresh for this demo
-      currentUser = user;
-      currentListData = user?.listData || null;
-      currentStoreData = user?.storeData || null;
+      const activeList = await shopping.getActiveList(user.id);
+      if (activeList) {
+        currentListData = activeList;
+        
+        // 3. Subscribe to real-time changes
+        if (listSubscription) listSubscription.unsubscribe();
+        listSubscription = shopping.subscribeToList(activeList.id, (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const updatedItem = payload.new;
+            // Update local state
+            currentListData.categories.forEach(cat => {
+              cat.articles.forEach(art => {
+                if (art.id === updatedItem.id) {
+                  art.done = updatedItem.is_checked;
+                }
+              });
+            });
+            // Re-render ONLY if we are on a tab that uses this data
+            if (activeTab === 'home' || activeTab === 'list') {
+              renderActiveTab();
+            }
+          } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+            // Simplify: just fetch full list again for now to maintain category structure
+            shopping.getActiveList(user.id).then(newList => {
+              currentListData = newList;
+              renderActiveTab();
+            });
+          }
+        });
+      }
     } catch (e) {
-      console.warn("Session refresh failed", e);
+      console.warn("Could not fetch active list", e);
     }
   }
+
   renderActiveTab();
 }
 

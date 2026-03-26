@@ -1,5 +1,6 @@
 import { calculateTotal } from '../utils/price.js';
 import { auth } from '../api/auth.js';
+import { shopping } from '../api/shopping.js';
 import { showToast } from './toast.js';
 
 export function createResultsView(data, budget, onBack, storeData, onListChange) {
@@ -90,10 +91,9 @@ export function createResultsView(data, budget, onBack, storeData, onListChange)
               <span class="text-3" style="font-size: 11px;">${cat.articles.length} articles</span>
             </h3>
             ${cat.articles.map((a, artIdx) => {
-              const id = `${cat.nom}-${a.nom}`;
-              const done = checkedItems.has(id);
+              const done = a.done;
               return `
-                <div class="li-item ${done ? 'done' : ''}" data-id="${id}" data-cat="${catIdx}" data-art="${artIdx}">
+                <div class="li-item ${done ? 'done' : ''}" data-cat="${catIdx}" data-art="${artIdx}">
                   <div class="chk">${done ? '✓' : ''}</div>
                   <div style="flex: 1;">
                     <p style="font-weight: 600; font-size: 14px;">${a.nom}</p>
@@ -142,12 +142,31 @@ export function createResultsView(data, budget, onBack, storeData, onListChange)
 
     // Checkbox Toggle
     el.querySelectorAll('.li-item').forEach(item => {
-      item.onclick = (e) => {
+      item.onclick = async (e) => {
         if (e.target.classList.contains('delete-item-btn')) return;
-        const id = item.dataset.id;
-        if (checkedItems.has(id)) checkedItems.delete(id);
-        else checkedItems.add(id);
-        render();
+        
+        const cIdx = parseInt(item.dataset.cat);
+        const aIdx = parseInt(item.dataset.art);
+        const article = currentCategories[cIdx].articles[aIdx];
+        
+        const newDone = !article.done;
+
+        // If it's a new unsaved list, just toggle locally
+        if (!article.id) {
+          article.done = newDone;
+          render();
+          return;
+        }
+
+        try {
+          const session = auth.getSession();
+          await shopping.toggleItem(article.id, newDone, session?.id);
+          article.done = newDone;
+          render();
+        } catch (err) {
+          showToast('❌ Erreur de synchro');
+          console.error(err);
+        }
       };
     });
 
@@ -197,8 +216,12 @@ export function createResultsView(data, budget, onBack, storeData, onListChange)
       btn.textContent = 'Chargement...';
       
       try {
-        const m = selectedStore ? getMultiplier(selectedStore.name) : 1;
-        await auth.saveCourse(data, storeData, m);
+        const session = auth.getSession();
+        await shopping.saveActiveList({ 
+          ...data, 
+          categories: currentCategories,
+          budget_goal: budget 
+        }, session?.id);
         showToast('✅ Course enregistrée avec succès !');
         btn.textContent = 'Enregistré !';
         setTimeout(() => {

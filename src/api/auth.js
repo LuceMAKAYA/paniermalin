@@ -110,51 +110,26 @@ export const auth = {
     }
   },
 
-  /** Save a list to the courses table */
-  async saveCourse(listData, storeData, multiplier = 1.0) {
+  /** Update user data in both session and Supabase profile */
+  async updateSessionData(data) {
     const session = this.getSession();
-    if (!session || session.type !== 'user') return;
+    if (!session) return;
+    
+    const updated = { ...session, ...data };
+    this.saveSession(updated);
 
-    const stats = {
-      total_price: listData.total_estime * multiplier,
-      items_count: listData.categories.reduce((acc, c) => acc + c.articles.length, 0),
-      seasonal_score: Math.floor(Math.random() * 20) + 75 // Placeholder
-    };
-
-    const { error } = await supabase
-      .from('courses')
-      .insert({
-        user_id: session.id,
-        list_data: listData,
-        store_data: storeData,
-        stats: stats
-      });
-
-    if (error) {
-      console.error("Course save error:", error);
-      throw error;
+    if (session.type === 'user') {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: session.id,
+          full_name: data.full_name || session.name,
+          city: data.city || session.city,
+          address: data.address || session.address,
+          avatar_url: data.avatar_url || session.avatar_url,
+          updated_at: new Date().toISOString()
+        });
+      if (error) console.error("Supabase sync error:", error);
     }
-  },
-
-  /** Save a list to the history table (Legacy support) */
-  async saveToHistory(listData, storeData) {
-    return this.saveCourse(listData, storeData, 1.0);
-  },
-
-  /** Fetch full history for the user */
-  async getHistory() {
-    const session = this.getSession();
-    if (!session || session.type !== 'user') return [];
-
-    const { data, error } = await supabase
-      .from('courses')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error("Fetch history error:", error);
-      return [];
-    }
-    return data;
   }
 };
