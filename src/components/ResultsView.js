@@ -1,4 +1,8 @@
-export function createResultsView(data, budget, onBack, storeData) {
+import { calculateTotal } from '../utils/price.js';
+import { auth } from '../api/auth.js';
+import { showToast } from './toast.js';
+
+export function createResultsView(data, budget, onBack, storeData, onListChange) {
   if (!data || !data.categories) {
     const empty = document.createElement('div');
     empty.style.padding = '40px'; empty.style.textAlign = 'center';
@@ -10,7 +14,7 @@ export function createResultsView(data, budget, onBack, storeData) {
   el.className = 'results-page';
   el.style.paddingTop = '10px';
 
-  let selectedStore = storeData?.rawStores?.[0] || null;
+  let selectedStore = null; // Default to standard price (1.0)
   let checkedItems = new Set();
   
   // Local mutable state for editing
@@ -32,8 +36,15 @@ export function createResultsView(data, budget, onBack, storeData) {
 
   const render = () => {
     const m = selectedStore ? getMultiplier(selectedStore.name) : 1;
-    const currentTotal = currentCategories.reduce((acc, cat) => 
-      acc + cat.articles.reduce((a, art) => a + (art.prix_estime || 0), 0), 0) * m;
+    const currentTotal = calculateTotal(currentCategories, m);
+    
+    // Sync back to original data if needed for other views
+    if (data.total_estime !== currentTotal / m) {
+      data.total_estime = currentTotal / m;
+      data.categories = currentCategories;
+      if (onListChange) onListChange();
+    }
+
     const pct = Math.min((currentTotal / budget) * 100, 100);
 
     el.innerHTML = `
@@ -105,8 +116,11 @@ export function createResultsView(data, budget, onBack, storeData) {
         `).join('')}
       </div>
 
-      <!-- Action Buttons -->
-      <div class="no-print" style="margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div class="no-print" style="margin-top: 40px; display: grid; grid-template-columns: 1fr; gap: 12px;">
+         <button class="btn-main" id="btn-save-course" style="padding: 16px; font-size: 16px;">✅ Enregistrer la course</button>
+      </div>
+
+      <div class="no-print" style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
          <button class="btn-ghost" id="btn-print">🖨️ Imprimer</button>
          <button class="btn-ghost" id="btn-share">🔗 Partager</button>
       </div>
@@ -175,8 +189,29 @@ export function createResultsView(data, budget, onBack, storeData) {
     });
 
     // General Actions
-    el.querySelector('#btn-re-gen').onclick = onBack;
     el.querySelector('#btn-print').onclick = () => window.print();
+
+    el.querySelector('#btn-save-course').onclick = async () => {
+      const btn = el.querySelector('#btn-save-course');
+      btn.disabled = true;
+      btn.textContent = 'Chargement...';
+      
+      try {
+        const m = selectedStore ? getMultiplier(selectedStore.name) : 1;
+        await auth.saveCourse(data, storeData, m);
+        showToast('✅ Course enregistrée avec succès !');
+        btn.textContent = 'Enregistré !';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = '✅ Enregistrer la course';
+        }, 2000);
+      } catch (err) {
+        showToast('❌ Erreur lors de la sauvegarde');
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = '✅ Enregistrer la course';
+      }
+    };
 
     el.querySelector('#btn-share').onclick = () => {
       let text = `Ma liste Panier Malin :\n\n`;

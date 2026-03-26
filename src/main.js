@@ -59,7 +59,7 @@ function renderActiveTab() {
         hasList: !!currentListData,
         people: getState().personnes,
         count: currentListData ? currentListData.categories.reduce((acc, c) => acc + c.articles.length, 0) : null,
-        total: currentListData ? currentListData.total_estime.toFixed(2) + '€' : null
+        total: currentListData ? (currentListData.total_estime).toFixed(2) + '€' : null
       };
       scrollArea.appendChild(createHomeView(currentUser.name, stats, switchTab));
       break;
@@ -75,7 +75,11 @@ function renderActiveTab() {
           </div>
         `;
       } else {
-        const listEl = createResultsView(currentListData, getState().budget, () => switchTab('setup'), currentStoreData);
+        const listEl = createResultsView(currentListData, getState().budget, () => switchTab('setup'), currentStoreData, () => {
+          // Re-render nav if summary changed (though summary is on home)
+          // Just update local session data so HomeView will pick it up when switched back
+          auth.updateSessionData({ listData: currentListData });
+        });
         scrollArea.appendChild(listEl);
       }
       break;
@@ -162,8 +166,7 @@ async function handleGenerate() {
     // Save to session for persistence
     await auth.updateSessionData({ listData: data, storeData: storeData });
     
-    // Archive to history table
-    await auth.saveToHistory(data, storeData);
+    // Automatic save removed - User will now use the "Enregistrer" button
 
     updateLoadingStep(4);
     await new Promise(r => setTimeout(r, 400));

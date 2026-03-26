@@ -110,19 +110,19 @@ export const auth = {
     }
   },
 
-  /** Save a list to the history table */
-  async saveToHistory(listData, storeData) {
+  /** Save a list to the courses table */
+  async saveCourse(listData, storeData, multiplier = 1.0) {
     const session = this.getSession();
     if (!session || session.type !== 'user') return;
 
     const stats = {
-      total_price: listData.total_estime * 0.88, // Use optimized/discount multiplier for history
+      total_price: listData.total_estime * multiplier,
       items_count: listData.categories.reduce((acc, c) => acc + c.articles.length, 0),
-      seasonal_score: Math.floor(Math.random() * 20) + 70 // Placeholder for real seasonal logic
+      seasonal_score: Math.floor(Math.random() * 20) + 75 // Placeholder
     };
 
     const { error } = await supabase
-      .from('shopping_history')
+      .from('courses')
       .insert({
         user_id: session.id,
         list_data: listData,
@@ -130,7 +130,15 @@ export const auth = {
         stats: stats
       });
 
-    if (error) console.error("History save error:", error);
+    if (error) {
+      console.error("Course save error:", error);
+      throw error;
+    }
+  },
+
+  /** Save a list to the history table (Legacy support) */
+  async saveToHistory(listData, storeData) {
+    return this.saveCourse(listData, storeData, 1.0);
   },
 
   /** Fetch full history for the user */
@@ -139,7 +147,7 @@ export const auth = {
     if (!session || session.type !== 'user') return [];
 
     const { data, error } = await supabase
-      .from('shopping_history')
+      .from('courses')
       .select('*')
       .order('created_at', { ascending: false });
 
