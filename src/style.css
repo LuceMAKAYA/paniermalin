@@ -403,6 +403,92 @@ h1, h2, h3, .syne, .clash {
 .fi-price { font-size: 11px; color: var(--text3); font-weight: 700; }
 
 /* ═══════════════════════════════════════
+   ADVANCED COMPONENTS: ALERTS & ANALYTICS
+═══════════════════════════════════════ */
+.alert-box {
+  background: rgba(239, 68, 68, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  position: relative;
+}
+.alert-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  opacity: 0.3; cursor: pointer;
+}
+
+/* Weekly Days */
+.weekly-days {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.day-pill {
+  width: 44px; height: 34px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  background: rgba(255,255,255,0.04);
+  color: var(--text3);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+.day-pill.done { background: rgba(34,197,94,0.1); color: #4ade80; border-color: rgba(34,197,94,0.2); }
+.day-pill.active { background: #1e3a8a; color: #60a5fa; border-color: #2563eb; }
+
+/* Analytics Chart */
+.analytics-card {
+  background: #111827;
+  border: 1px solid var(--border);
+}
+.chart-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 80px;
+  margin: 24px 0;
+  gap: 12px;
+}
+.bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.bar {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  transition: height 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.bar.active { background: #22c55e; }
+.bar-label { font-size: 10px; color: var(--text3); font-weight: 600; }
+
+/* Activity List */
+.activity-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.activity-item:last-child { border-bottom: none; }
+.act-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px;
+}
+.act-content { flex: 1; }
+.act-name { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+.act-text { font-size: 12px; color: var(--text2); }
+.act-time { font-size: 10px; color: var(--text3); white-space: nowrap; }
+
+/* Quick Access Enhanced */
+.qa-header-gradient {
+  height: 3px; width: 100%;
+  position: absolute; top: 0; left: 0;
+}
+
+/* ═══════════════════════════════════════
    UTILITIES & ANIMATIONS
 ═══════════════════════════════════════ */
 .fade-in {
