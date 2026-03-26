@@ -506,3 +506,98 @@ h1, h2, h3, .syne, .clash {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+/* ═══════════════════════════════════════
+   ONBOARDING / FORM SPECIFIC
+   (Chips, Number Buttons, Groups)
+   ═══════════════════════════════════════ */
+.chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.chip {
+  padding: 10px 18px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text2);
+  user-select: none;
+}
+
+.chip:hover {
+  background: var(--bg3);
+  border-color: var(--border3);
+  transform: translateY(-1px);
+}
+
+.chip.on {
+  background: var(--as);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 4px 15px rgba(61,127,255,0.15);
+}
+
+.num-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.num-btn {
+  flex: 1;
+  aspect-ratio: 1/1;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text2);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.num-btn:hover {
+  border-color: var(--border3);
+}
+
+.num-btn.on {
+  background: var(--as);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.freq-btn, .profil-card {
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.freq-btn.on, .profil-card.on {
+  background: var(--accent) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(61,127,255,0.3);
+}
+
+input[type="range"] {
+  height: 6px;
+  -webkit-appearance: none;
+  background: var(--bg3);
+  border-radius: 10px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(61,127,255,0.4);
+}
