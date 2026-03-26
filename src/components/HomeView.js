@@ -3,13 +3,32 @@ export function createHomeView(userName, listStats, onSwitchTab) {
   el.className = 'home-view fade-in';
 
   // Map real analytics
-  const chartData = (listStats.spendingHistory || []).map((h, i, arr) => ({
+  const history = listStats.spendingHistory || [];
+  const chartData = history.map((h, i, arr) => ({
     label: new Date(h.week_start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
-    val: Math.min(Math.round((h.total_amount / (h.budget_goal || 15000)) * 100), 100),
-    amt: (h.total_amount / 100).toFixed(0) + '€',
+    val: Math.min(Math.round((h.actual_spent / (listStats.budget_goal || 15000)) * 100), 100),
+    amt: (h.actual_spent / 100).toFixed(0) + '€',
     active: i === arr.length - 1
   }));
   
+  // Calculate aggregate stats (Fix fictional 58.40€ / 234€)
+  const totalActual = history.reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
+  const lastMonthAvg = history.length > 0 ? totalActual / history.length : 0;
+  
+  // For "Ce mois", we sum everything from current month
+  const now = new Date();
+  const ceMois = history
+    .filter(h => new Date(h.week_start).getMonth() === now.getMonth())
+    .reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
+
+  // Trend (vs last month)
+  const lastMonth = new Date(); lastMonth.setMonth(now.getMonth() - 1);
+  const totalLastMonth = history
+    .filter(h => new Date(h.week_start).getMonth() === lastMonth.getMonth())
+    .reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
+  
+  const diffMois = totalLastMonth > 0 ? Math.round(((ceMois - totalLastMonth) / totalLastMonth) * 100) : 0;
+
   // Fallback if no history
   if (chartData.length === 0) {
     chartData.push({ label: 'Sem. 1', val: 0, amt: '0€', active: true });
@@ -138,12 +157,12 @@ export function createHomeView(userName, listStats, onSwitchTab) {
             <div class="badge" style="margin-top: 16px; background: rgba(245,158,11,0.1); color: #fbbf24; border: none;">Économise -12€</div>
           </div>
 
-          <div class="card clickable" style="min-height: 160px; padding: 20px; background: #111827; position: relative;">
+          <div class="card clickable" style="min-height: 160px; padding: 20px; background: #111827; position: relative;" onclick="window.__switchTab('list')">
             <div class="qa-header-gradient" style="background: linear-gradient(90deg, #10b981, #3b82f6);"></div>
             <div style="font-size: 24px; margin-bottom: 12px;">🍴</div>
-            <p style="font-weight: 700; font-size: 15px; margin-bottom: 6px;">Menu semaine</p>
-            <p class="text-3" style="font-size: 11px; line-height: 1.4;">7 repas planifiés depuis ta liste actuelle</p>
-            <div class="badge" style="margin-top: 16px; background: rgba(16,185,129,0.1); color: #34d399; border: none;">7 repas prêts</div>
+            <p style="font-weight: 700; font-size: 15px; margin-bottom: 6px;">Planificateur</p>
+            <p class="text-3" style="font-size: 11px; line-height: 1.4;">${totalArticles > 0 ? totalArticles + ' articles prêts à cuisiner' : 'Générez une liste pour voir vos menus'}</p>
+            <div class="badge" style="margin-top: 16px; background: rgba(16,185,129,0.1); color: #34d399; border: none;">${totalArticles > 0 ? 'IA active' : 'En attente'}</div>
           </div>
         </div>
       </div>
@@ -151,7 +170,7 @@ export function createHomeView(userName, listStats, onSwitchTab) {
       <!-- Items to Add -->
       <div style="margin-bottom: 32px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h3 class="clash" style="font-size: 18px;">À ajouter à ta liste</h3>
+          <h3 class="clash" style="font-size: 18px;">Suggestions pour vous</h3>
           <span style="color: #60a5fa; font-size: 12px; font-weight: 600;">Voir plus</span>
         </div>
         <div class="h-scroll" style="gap: 12px;">
@@ -190,15 +209,15 @@ export function createHomeView(userName, listStats, onSwitchTab) {
 
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
           <div>
-            <p class="hs-val-v3" style="font-size: 18px;">58.40€</p>
+            <p class="hs-val-v3" style="font-size: 18px;">${lastMonthAvg.toFixed(2)}€</p>
             <p class="text-3" style="font-size: 9px; text-transform: uppercase;">Moy. mensuelle</p>
           </div>
           <div>
-            <p class="hs-val-v3" style="font-size: 18px;">234€</p>
+            <p class="hs-val-v3" style="font-size: 18px;">${ceMois.toFixed(0)}€</p>
             <p class="text-3" style="font-size: 9px; text-transform: uppercase;">Ce mois</p>
           </div>
           <div>
-            <p class="hs-val-v3" style="font-size: 18px; color: #f87171;">-6%</p>
+            <p class="hs-val-v3" style="font-size: 18px; color: ${diffMois < 0 ? '#4ade80' : '#f87171'};">${diffMois > 0 ? '+' : ''}${diffMois}%</p>
             <p class="text-3" style="font-size: 9px; text-transform: uppercase;">vs mois dernier</p>
           </div>
         </div>
