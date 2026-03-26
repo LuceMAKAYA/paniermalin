@@ -63,7 +63,7 @@ export const auth = {
     return userData;
   },
 
-  /** Continue as guest (Keeps local storage for now, or could use Supabase Anonymous) */
+  /** Continue as guest – NOTE: guest IDs are ephemeral (Date.now-based) and are intentionally not persisted across sessions */
   continueAsGuest(name) {
     const guestUser = { id: 'guest-' + Date.now(), name, type: 'guest' };
     localStorage.setItem('panier_malin_session', JSON.stringify(guestUser));
@@ -76,10 +76,8 @@ export const auth = {
     localStorage.removeItem('panier_malin_session');
   },
 
-  /** Get current session */
+  /** Get current session (cached snapshot – authoritative check is supabase.auth.getUser() in boot) */
   getSession() {
-    // Note: session restoration is better handled via await supabase.auth.getUser() on boot
-    // but for the UI transition, we return a cached object or null
     return JSON.parse(localStorage.getItem('panier_malin_session') || 'null');
   },
 

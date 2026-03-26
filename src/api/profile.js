@@ -71,6 +71,8 @@ export const profile = {
       extra_categories: prefs.extra_categories || [],
       pets: prefs.pets || [],
       budget_profile: prefs.budget_profile || 'equilibre',
+      // Fix #7: budget_goal was silently ignored before
+      budget_goal: prefs.budget_goal ?? 150,
       updated_at: new Date().toISOString()
     };
 

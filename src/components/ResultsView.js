@@ -1,5 +1,5 @@
 import { calculateTotal } from '../utils/price.js';
-import { auth } from '../api/auth.js';
+// Fix #4: removed unused 'auth' import (was used by old save flow, now replaced by shopping.completeList)
 import { shopping } from '../api/shopping.js';
 import { showToast } from './toast.js';
 
@@ -41,15 +41,10 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
   const render = () => {
     const m = selectedStore ? getMultiplier(selectedStore.name) : 1;
     const currentTotal = calculateTotal(currentCategories, m);
-    
-    // Sync back to original data if needed for other views (with small tolerance to avoid loops)
-    const diff = Math.abs(data.total_estime - currentTotal / m);
-    if (diff > 0.01) {
-      data.total_estime = currentTotal / m;
-      data.categories = currentCategories;
-      if (onListChange) onListChange(data);
-    }
 
+    // Fix #5: build a fresh snapshot rather than mutating the 'data' argument.
+    // onListChange is called only when the user actually modifies the list
+    // (deletion / quick-add), not on every render, to avoid infinite re-render loops.
     const pct = Math.min((currentTotal / budget) * 100, 100);
 
     el.innerHTML = `
@@ -217,6 +212,8 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
         const aIdx = parseInt(btn.dataset.art);
         currentCategories[cIdx].articles.splice(aIdx, 1);
         render();
+        // Fix #5: notify parent only on explicit user mutation
+        if (onListChange) onListChange({ ...data, categories: currentCategories });
       };
     });
 
@@ -242,6 +239,8 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
         if (val) {
           currentCategories[cIdx].articles.push({ nom: val, quantite: '1 unité', prix_estime: 2.50 });
           render();
+          // Fix #5: notify parent only on explicit user mutation
+          if (onListChange) onListChange({ ...data, categories: currentCategories });
         }
       };
     });

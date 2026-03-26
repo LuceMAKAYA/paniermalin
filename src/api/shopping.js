@@ -67,22 +67,24 @@ export const shopping = {
   /**
    * Récupère la dernière liste active de l'utilisateur avec ses articles
    */
-  async getActiveList(userId) {
-    if (!userId) {
-      const { data: { user } } = await supabase.auth.getUser();
-      userId = user?.id;
-    }
-    if (!userId) return null;
+  async getActiveList(userId, familyId = null) {
+    if (!userId && !familyId) return null;
 
-    // Récupérer la liste la plus récente
-    const { data: list, error: listError } = await supabase
+    let query = supabase
       .from('shopping_lists')
       .select('*')
-      .eq('user_id', userId)
       .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
+    if (familyId) {
+      query = query.eq('family_id', familyId);
+    } else {
+      // Fix #3: correctly use userId when no family
+      if (!userId) return null;
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: list, error: listError } = await query.maybeSingle();
     if (listError || !list) return null;
 
     // Récupérer les articles associés
@@ -177,17 +179,25 @@ export const shopping = {
   /**
    * Récupère les stats de dépenses hebdomadaires
    */
-  async getWeeklySpending(userId) {
-    if (!userId) return [];
-    const { data, error } = await supabase
+  // Fix #2: accept familyId as second param and filter by it when present
+  async getWeeklySpending(userId, familyId = null) {
+    if (!userId && !familyId) return [];
+    
+    let query = supabase
       .from('weekly_spending')
       .select('*')
-      .eq('user_id', userId)
       .order('week_start', { ascending: true })
       .limit(4);
-    
+
+    if (familyId) {
+      query = query.eq('family_id', familyId);
+    } else {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
-    return data;
+    return data ?? [];
   },
 
   /**

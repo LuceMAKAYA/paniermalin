@@ -110,7 +110,7 @@ function renderActiveTab() {
 
     case 'map':
       scrollArea.appendChild(createMapView(currentStoreData, (storeName) => {
-        alert(`Magasin sélectionné : ${storeName}. Vous pouvez maintenant voir les prix pour ce magasin dans l'onglet Liste.`);
+        // Fix #13: Replace alert() with switchTab
         switchTab('list');
       }));
       break;
@@ -184,22 +184,15 @@ async function handleGenerate() {
     
     currentListData = data;
     currentStoreData = storeData;
-    console.log("AI Generation Successful. Data:", data);
     
-    // Auto-save the generated list (Phase 3)
+    // Save list + preferences to Supabase in one consolidated block
     if (currentUser && currentUser.type === 'user') {
       try {
-        console.log("Saving generated list to Supabase...");
-        await shopping.saveActiveList(currentListData, currentUser.id, userFamily?.id);
-        console.log("List persisted to Supabase");
-      } catch (saveErr) {
-        console.warn("Failed to auto-save list to DB:", saveErr);
-      }
-    }
-    
-    // Save to Supabase (Phase 3)
-    if (currentUser && currentUser.type === 'user') {
-      try {
+        // Fix #1: Store the returned list (with its real DB id) so completeList() works
+        const savedList = await shopping.saveActiveList(currentListData, currentUser.id, userFamily?.id);
+        if (savedList?.id) currentListData.id = savedList.id;
+
+        // Save profile & preferences in parallel
         const pUpdate = profile.updateProfile(currentUser.id, {
           city: state.ville || '',
           address: state.ville || '',
@@ -211,11 +204,12 @@ async function handleGenerate() {
           dietary_regime: state.regimes || ['omnivore'],
           cuisines: state.cuisines || ['francaise'],
           extra_categories: state.extras || [],
-          budget_profile: state.profilBudget || 'equilibre'
+          budget_profile: state.profilBudget || 'equilibre',
+          budget_goal: state.budget || 150
         });
         await Promise.all([pUpdate, prefUpdate]);
-      } catch (dbErr) {
-        console.warn("Could not save preferences to DB, but continuing...", dbErr);
+      } catch (saveErr) {
+        console.warn("Could not persist list/preferences to DB:", saveErr);
       }
     }
 
@@ -225,10 +219,15 @@ async function handleGenerate() {
     activeTab = 'list';
     renderActiveTab();
   } catch (err) {
-    console.error("Critical Generation Error:", err);
+    console.error("Generation Error:", err);
     activeTab = 'setup';
+    // Fix #13: Replace blocking alert() with inline error
     renderActiveTab();
-    alert("Désolé, une erreur est survenue lors de la génération. Veuillez réessayer.");
+    const errBanner = document.createElement('div');
+    errBanner.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;background:#ef4444;color:white;padding:14px 18px;border-radius:14px;font-weight:700;font-size:13px;z-index:999;box-shadow:0 4px 20px rgba(239,68,68,0.4)';
+    errBanner.textContent = '⚠️ Erreur lors de la génération. Vérifiez votre connexion et réessayez.';
+    document.body.appendChild(errBanner);
+    setTimeout(() => errBanner.remove(), 5000);
   }
 }
 

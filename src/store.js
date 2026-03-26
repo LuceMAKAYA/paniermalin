@@ -81,16 +81,17 @@ export function getAnimals() { return state.animals; }
  */
 export function setState(newData) {
   if (!newData) return;
-  if (newData.personnes) state.personnes = String(newData.personnes);
-  if (newData.budget) state.budget = Number(newData.budget);
-  if (newData.ville) state.ville = newData.ville;
-  if (newData.periode) state.periode = newData.periode;
-  if (newData.profilBudget) state.profilBudget = newData.profilBudget;
-  if (newData.habitudes) state.habitudes = newData.habitudes;
+  // Fix #8: use ?? / != null to allow falsy-but-valid values like 0 or ''
+  if (newData.personnes != null) state.personnes = String(newData.personnes);
+  if (newData.budget != null)    state.budget = Number(newData.budget);
+  if (newData.ville != null)     state.ville = newData.ville;
+  if (newData.periode != null)   state.periode = newData.periode;
+  if (newData.profilBudget != null) state.profilBudget = newData.profilBudget;
+  if (newData.habitudes != null) state.habitudes = newData.habitudes;
   
   if (newData.cuisines) state.cuisines = new Set(newData.cuisines);
-  if (newData.regimes) state.regimes = new Set(newData.regimes);
-  if (newData.extras) state.extras = new Set(newData.extras);
+  if (newData.regimes)  state.regimes  = new Set(newData.regimes);
+  if (newData.extras)   state.extras   = new Set(newData.extras);
   
   if (newData.animals) {
     state.animals = [...newData.animals];
