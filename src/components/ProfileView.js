@@ -132,7 +132,7 @@ export function createProfileView(user) {
           const month = date.toLocaleString('fr-FR', { month: 'short' }).toUpperCase();
           const price = (h.actual_spent || h.total_budget || 0) / 100;
           return `
-            <div class="card clickable" style="padding: 14px; background: rgba(255,255,255,0.02); margin-bottom: 12px; border-color: var(--border);">
+            <div class="card clickable" onclick="window.__showListDetail('${h.id}')" style="padding: 14px; background: rgba(255,255,255,0.02); margin-bottom: 12px; border-color: var(--border);">
               <div style="display: flex; align-items: center; gap: 16px;">
                 <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
                   <span style="font-size: 16px; font-weight: 800; color: var(--accent); line-height: 1;">${day}</span>
@@ -140,7 +140,7 @@ export function createProfileView(user) {
                 </div>
                 <div style="flex: 1;">
                   <p style="font-weight: 700; font-size: 14px; color: var(--text);">${h.title || 'Course Optimisée'}</p>
-                  <p class="text-3" style="font-size: 11px; font-weight: 600; opacity: 0.6;">${h.status === 'completed' ? '❤️ Complétée' : '⏳ En cours'}</p>
+                  <p class="text-3" style="font-size: 11px; font-weight: 600; opacity: 0.6;">📍 ${h.store_name || 'Magasin non spécifié'}</p>
                 </div>
                 <div style="text-align: right;">
                   <p class="clash" style="font-weight: 800; font-size: 18px; color: var(--green);">${price.toFixed(0)}€</p>
@@ -149,6 +149,25 @@ export function createProfileView(user) {
             </div>
           `;
         }).join('')}
+      </div>
+
+      <!-- Overlay (hidden by default) -->
+      <div id="list-detail-overlay" class="modal-root" style="display: none; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 2000;">
+        <div class="modal-content animate-slide-up" style="max-height: 85vh; padding: 0; background: var(--bg); border-radius: 32px 32px 0 0; position: fixed; bottom: 0; left: 0; width: 100%; border: 1px solid var(--border);">
+            <div style="padding: 24px;">
+                <div style="width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h2 class="clash" id="overlay-title" style="font-size: 20px;">Détails de la course</h2>
+                    <button class="btn-close" onclick="document.getElementById('list-detail-overlay').style.display='none'" style="background: var(--bg2); width: 32px; height: 32px; border-radius: 50%; border: none; color: white;">✕</button>
+                </div>
+                <div id="overlay-store" style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px dashed var(--border);">
+                    <!-- Store info will be injected here -->
+                </div>
+                <div id="overlay-items" style="max-height: 60vh; overflow-y: auto;">
+                    <!-- Items will be injected here -->
+                </div>
+            </div>
+        </div>
       </div>
 
       <button class="btn-ghost" id="btn-logout" style="color: var(--red); border-color: rgba(239,68,68,0.2); margin-top: 20px; background: rgba(239,68,68,0.03); font-weight: 800; letter-spacing: 0.5px;">DÉCONNEXION</button>
@@ -185,6 +204,57 @@ export function createProfileView(user) {
       if (confirm('Voulez-vous vous déconnecter ?')) {
         auth.logout();
         location.reload();
+      }
+    };
+
+      window.__showListDetail = async (listId) => {
+        const overlay = el.querySelector('#list-detail-overlay');
+        const itemsList = el.querySelector('#overlay-items');
+        const storeInfo = el.querySelector('#overlay-store');
+        const title = el.querySelector('#overlay-title');
+        
+        overlay.style.display = 'block';
+        itemsList.innerHTML = '<div style="text-align: center; padding: 40px;"><p class="text-3 mt-10">Chargement des articles...</p></div>';
+        storeInfo.innerHTML = '';
+        
+        try {
+            const listData = await shopping.getListWithItems(listId);
+            title.textContent = listData.title || 'Course du ' + new Date(listData.created_at).toLocaleDateString();
+            
+            storeInfo.innerHTML = `
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <div style="font-size: 24px;">📍</div>
+                    <div>
+                        <p style="font-weight: 800; font-size: 15px; color: var(--accent);">${listData.store_name || 'Magasin non spécifié'}</p>
+                        <p class="text-3" style="font-size: 11px; opacity: 0.7;">${listData.store_address || 'Adresse non renseignée'}</p>
+                    </div>
+                </div>
+            `;
+          if (!listData.categories || listData.categories.length === 0) {
+              itemsList.innerHTML = '<p class="text-3" style="text-align: center; padding: 20px;">Aucun article dans cette liste.</p>';
+          } else {
+              itemsList.innerHTML = listData.categories.map(cat => `
+                  <div style="margin-bottom: 24px;">
+                      <p class="text-3" style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                          <span>${cat.emoji}</span> ${cat.nom}
+                      </p>
+                      <div style="display: flex; flex-direction: column; gap: 10px;">
+                          ${cat.articles.map(art => `
+                              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--border);">
+                                  <div>
+                                      <p style="font-size: 14px; font-weight: 700; color: ${art.done ? 'var(--text3)' : 'var(--text)'}; text-decoration: ${art.done ? 'line-through' : 'none'};">${art.nom}</p>
+                                      <p style="font-size: 11px; opacity: 0.6;">Qté: ${art.quantite}</p>
+                                  </div>
+                                  <p style="font-weight: 800; font-size: 14px; color: var(--green);">${art.prix_estime.toFixed(2)}€</p>
+                              </div>
+                          `).join('')}
+                      </div>
+                  </div>
+              `).join('');
+          }
+      } catch (err) {
+          console.error(err);
+          itemsList.innerHTML = `<p style="color: var(--red); text-align: center; padding: 20px;">Erreur : ${err.message}</p>`;
       }
     };
   };

@@ -1,42 +1,71 @@
 export function createHomeView(userName, listStats, onSwitchTab) {
   const el = document.createElement('div');
   el.className = 'home-view fade-in';
-
-  // Map real analytics
-  const history = listStats.spendingHistory || [];
-  const chartData = history.map((h, i, arr) => ({
-    label: new Date(h.week_start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
-    val: Math.min(Math.round((h.actual_spent / (listStats.budget_goal || 15000)) * 100), 100),
-    amt: (h.actual_spent / 100).toFixed(0) + '€',
-    active: i === arr.length - 1
-  }));
   
-  // Calculate aggregate stats (Fix fictional 58.40€ / 234€)
-  const totalActual = history.reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
-  const lastMonthAvg = history.length > 0 ? totalActual / history.length : 0;
-  
-  // For "Ce mois", we sum everything from current month
-  const now = new Date();
-  const ceMois = history
-    .filter(h => new Date(h.week_start).getMonth() === now.getMonth())
-    .reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
+  let viewPeriod = 'week'; // 'week' | 'month'
 
-  // Trend (vs last month)
-  const lastMonth = new Date(); lastMonth.setMonth(now.getMonth() - 1);
-  const totalLastMonth = history
-    .filter(h => new Date(h.week_start).getMonth() === lastMonth.getMonth())
-    .reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
-  
-  const diffMois = totalLastMonth > 0 ? Math.round(((ceMois - totalLastMonth) / totalLastMonth) * 100) : 0;
+  const render = (period = 'week') => {
+    viewPeriod = period;
+    const history = listStats.spendingHistory || [];
+    
+    // Aggregate data if needed
+    let displayHistory = history;
+    if (viewPeriod === 'month') {
+      const monthly = {};
+      history.forEach(h => {
+        const d = new Date(h.week_start);
+        const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+        if (!monthly[key]) {
+          monthly[key] = { week_start: key + '-01', actual_spent: 0, count: 0 };
+        }
+        monthly[key].actual_spent += (h.actual_spent || 0);
+        monthly[key].count++;
+      });
+      displayHistory = Object.values(monthly);
+    }
 
-  // Fallback if no history
-  if (chartData.length === 0) {
-    chartData.push({ label: 'Sem. 1', val: 0, amt: '0€', active: true });
-  }
+    const totalActual = history.reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
+    const lastMonthAvg = history.length > 0 
+      ? history.filter(h => (h.actual_spent || 0) > 0).reduce((s, h) => s + h.actual_spent, 0) / (history.filter(h => (h.actual_spent || 0) > 0).length || 1) / 100
+      : 0;
+    
+    const now = new Date();
+    const ceMois = history
+      .filter(h => {
+          const d = new Date(h.week_start);
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
 
-  const familyActivity = listStats.recentActivity || [];
+    const lastMonth = new Date(); lastMonth.setMonth(now.getMonth() - 1);
+    const totalLastMonth = history
+      .filter(h => {
+          const d = new Date(h.week_start);
+          return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
+      })
+      .reduce((sum, h) => sum + (h.actual_spent || 0), 0) / 100;
+    
+    const diffMois = totalLastMonth > 0 ? Math.round(((ceMois - totalLastMonth) / totalLastMonth) * 100) : 0;
 
-  const render = () => {
+    const chartData = displayHistory.slice(-12).map((h, i, arr) => {
+      const budgetVal = viewPeriod === 'week' ? (listStats.budget_goal || 15000) : (listStats.budget_goal || 15000) * 4;
+      const barHeight = Math.min(Math.round(((h.actual_spent || 0) / budgetVal) * 100), 100);
+      const label = viewPeriod === 'week' 
+        ? new Date(h.week_start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+        : new Date(h.week_start).toLocaleDateString('fr-FR', { month: 'short' });
+
+      return {
+        label,
+        val: barHeight > 0 ? barHeight : 2,
+        amt: ((h.actual_spent || 0) / 100).toFixed(0) + '€',
+        active: i === arr.length - 1
+      };
+    });
+
+    if (chartData.length === 0) {
+      chartData.push({ label: 'Aucune', val: 5, amt: '0€', active: true });
+    }
+
     const articlesFound = listStats.articlesFound || 0;
     const totalArticles = listStats.count || 0;
     const seasonalPct  = listStats.seasonalPct ?? 0;
@@ -193,10 +222,19 @@ export function createHomeView(userName, listStats, onSwitchTab) {
 
       <!-- Analytics Chart -->
       <div class="card analytics-card" style="padding: 24px; margin-bottom: 32px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <h3 class="clash" style="font-size: 16px;">Dépenses 4 dernières semaines</h3>
-          <div class="badge" style="background: rgba(59,130,246,0.1); color: #60a5fa; border: none; font-size: 9px;">↓ tendance</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <h3 class="clash" style="font-size: 16px;">Analyses dépenses</h3>
+          
+          <div style="display: flex; gap: 4px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 10px;">
+            <button class="btn-period ${viewPeriod === 'week' ? 'active' : ''}" id="p-week" style="padding: 4px 10px; border-radius: 8px; border: none; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s;">SEM.</button>
+            <button class="btn-period ${viewPeriod === 'month' ? 'active' : ''}" id="p-month" style="padding: 4px 10px; border-radius: 8px; border: none; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s;">MOIS</button>
+          </div>
         </div>
+        
+        <style>
+          .btn-period { background: transparent; color: var(--text3); }
+          .btn-period.active { background: var(--accent); color: white; }
+        </style>
         
         <div class="chart-container">
           ${chartData.map(d => `
@@ -256,6 +294,9 @@ export function createHomeView(userName, listStats, onSwitchTab) {
     
     el.querySelector('#btn-quick-new-ia').onclick = () => onSwitchTab('setup');
     el.querySelector('#btn-quick-stores').onclick = () => onSwitchTab('map');
+
+    el.querySelector('#p-week').onclick = () => render('week');
+    el.querySelector('#p-month').onclick = () => render('month');
   };
 
   render();

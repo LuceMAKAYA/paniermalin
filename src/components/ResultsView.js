@@ -47,7 +47,20 @@ export function createResultsView(data, budget, userFamily, storeData, onListCha
     // (deletion / quick-add), not on every render, to avoid infinite re-render loops.
     const pct = Math.min((currentTotal / budget) * 100, 100);
 
+    const storeName = data.store_name || 'Magasin non spécifié';
+    const storeAddr = data.store_address || '';
+
     el.innerHTML = `
+      <div class="animate-fade-up" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <h2 class="clash" style="font-size: 24px; margin-bottom: 4px;">Optimisation Terminée</h2>
+            <p class="text-3" style="font-size: 13px;">Magasin : <b style="color: var(--accent);">${storeName}</b></p>
+            ${storeAddr ? `<p class="text-3" style="font-size: 10px; margin-top: 2px; opacity: 0.6;">${storeAddr}</p>` : ''}
+          </div>
+          <div class="badge" style="background: rgba(34,197,94,0.1); color: #4ade80; border: none;">Panier Prêt</div>
+        </div>
+      </div>
       <div class="glass animate-fade-up" style="padding: 24px; border-radius: 0 0 24px 24px; margin: -10px -24px 24px; border-top: none;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
           <div>

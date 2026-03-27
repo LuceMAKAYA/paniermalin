@@ -82,7 +82,9 @@ function renderActiveTab() {
           const allArt = currentListData.categories.flatMap(c => c.articles || []);
           // On estime 1.5kg de CO2 économisé par article de saison/local
           return Math.round(allArt.filter(a => a.is_seasonal).length * 1.5);
-        })()
+        })(),
+        budget_goal: getState().budget * 100, // Cents
+        spendingHistory
       };
       scrollArea.appendChild(createHomeView(currentUser.name, stats, switchTab));
       break;
@@ -109,8 +111,11 @@ function renderActiveTab() {
       break;
 
     case 'map':
-      scrollArea.appendChild(createMapView(currentStoreData, (storeName) => {
-        // Fix #13: Replace alert() with switchTab
+      scrollArea.appendChild(createMapView(currentStoreData, (storeName, storeAddress) => {
+        if (currentListData) {
+          currentListData.store_name = storeName;
+          currentListData.store_address = storeAddress;
+        }
         switchTab('list');
       }));
       break;
@@ -131,7 +136,14 @@ function renderSetup() {
 // ── Navigation ────────────────────────────────────────────
 async function refreshStats() {
   if (currentUser && currentUser.type === 'user') {
-    spendingHistory = await shopping.getWeeklySpending(currentUser.id, userFamily?.id);
+    const familyId = userFamily?.id;
+    // We fetch BOTH summaries for the chart and actual lists for history
+    const [stats, lists] = await Promise.all([
+      shopping.getWeeklySpending(currentUser.id, familyId),
+      shopping.getHistory(currentUser.id, familyId)
+    ]);
+    spendingHistory = stats || [];
+    listHistory = lists || [];
   }
 }
 window.__refreshStats = refreshStats;

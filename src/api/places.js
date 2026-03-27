@@ -79,6 +79,12 @@ export async function fetchNearbyStores(address) {
         const dist = getDistance(lat, lon, eLat, eLon);
         return {
           name: e.tags.name,
+          address: [
+            e.tags['addr:housenumber'],
+            e.tags['addr:street'],
+            e.tags['addr:postcode'],
+            e.tags['addr:city']
+          ].filter(Boolean).join(' ') || 'Adresse non renseignée',
           type: translateType(e.tags.shop),
           dist,
           lat: eLat,

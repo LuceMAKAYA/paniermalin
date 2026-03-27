@@ -26,7 +26,9 @@ export const shopping = {
         title: listData.title || `Liste du ${new Date().toLocaleDateString('fr-FR')}`,
         total_budget: Number(listData.total_budget || listData.budget_goal || 0),
         season_month: new Date().getMonth() + 1,
-        status: 'active'
+        status: 'active',
+        store_name: listData.store_name || null,
+        store_address: listData.store_address || null
       })
       .select()
       .single();
@@ -137,6 +139,49 @@ export const shopping = {
   },
 
   /**
+   * Récupère une liste spécifique avec tous ses articles (Lecture seule)
+   */
+  async getListWithItems(listId) {
+    const { data: list, error: listError } = await supabase
+      .from('shopping_lists')
+      .select('*')
+      .eq('id', listId)
+      .single();
+
+    if (listError || !list) return null;
+
+    const { data: items, error: itemsError } = await supabase
+      .from('list_items')
+      .select('*')
+      .eq('list_id', listId)
+      .order('position', { ascending: true });
+
+    if (itemsError) throw itemsError;
+
+    // Categoriser
+    const categorized = {};
+    items.forEach(item => {
+      const cat = item.category || 'Autres';
+      if (!categorized[cat]) {
+        categorized[cat] = { nom: cat, emoji: item.emoji || '📦', articles: [] };
+      }
+      categorized[cat].articles.push({
+        id: item.id,
+        nom: item.name,
+        quantite: item.quantity,
+        prix_estime: item.unit_price / 100,
+        done: item.is_checked
+      });
+    });
+
+    return {
+      ...list,
+      total_estime: items.reduce((acc, i) => acc + (i.unit_price / 100), 0),
+      categories: Object.values(categorized)
+    };
+  },
+
+  /**
    * Récupère l'historique complet des listes
    */
   async getHistory(userId, familyId = null) {
@@ -196,8 +241,7 @@ export const shopping = {
       }
     }
 
-    // 4. Archive into weekly_spending (Phase 5)
-    // We use the current date as week_start for simplicity
+    // 4. Archive into weekly_spending (Phase 5 + 9)
     const { error: spendError } = await supabase
       .from('weekly_spending')
       .insert({
@@ -206,7 +250,9 @@ export const shopping = {
         week_start: new Date().toISOString().split('T')[0],
         total_budget: list.total_budget,
         actual_spent: Math.round(actualSpent * 100),
-        seasonal_pct
+        seasonal_pct,
+        store_name: list.store_name,
+        store_address: list.store_address
       });
 
     if (spendError) console.error("Error archiving to weekly_spending:", spendError);

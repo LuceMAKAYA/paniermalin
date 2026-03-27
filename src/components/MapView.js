@@ -26,7 +26,7 @@ export function createMapView(storeData, onStoreSelect) {
             const promoText = hasPromo ? ['-30% sur le Frais', '2 achetés = 1 offert', 'Rayon Bio à -15%'][(s.name.length) % 3] : null;
             
             return `
-            <div class="card glass store-card" data-name="${s.name}" style="cursor: pointer; padding: 16px; margin-bottom: 0; display: flex; align-items: center; transition: all 0.2s;">
+            <div class="card glass store-card" data-name="${s.name}" data-address="${s.address || ''}" style="cursor: pointer; padding: 16px; margin-bottom: 0; display: flex; align-items: center; transition: all 0.2s;">
               <div style="flex:1;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                   <p style="font-weight: 800; font-size: 15px; color: var(--text);">${s.name}</p>
@@ -58,7 +58,7 @@ export function createMapView(storeData, onStoreSelect) {
 
       storeData.rawStores.forEach(s => {
         const marker = L.marker([s.lat, s.lon]).addTo(map);
-        marker.on('click', () => onStoreSelect(s.name));
+        marker.on('click', () => onStoreSelect(s.name, s.address));
       });
     };
 
@@ -76,7 +76,7 @@ export function createMapView(storeData, onStoreSelect) {
   }
 
   el.querySelectorAll('.store-card').forEach(card => {
-    card.onclick = () => onStoreSelect(card.dataset.name);
+    card.onclick = () => onStoreSelect(card.dataset.name, card.dataset.address);
   });
 
   return el;
