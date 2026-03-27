@@ -94,7 +94,7 @@ export const shopping = {
       .from('list_items')
       .select('*')
       .eq('list_id', list.id)
-      .order('position', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (itemsError) throw itemsError;
 
@@ -154,7 +154,7 @@ export const shopping = {
       .from('list_items')
       .select('*')
       .eq('list_id', listId)
-      .order('position', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (itemsError) throw itemsError;
 

@@ -261,11 +261,10 @@ export function createHomeView(userName, listStats, onSwitchTab) {
         </div>
       </div>
 
-      <!-- Activity Feed -->
       <div class="card family-card" style="padding: 24px; margin-bottom: 32px;">
         <h3 class="clash" style="font-size: 18px; margin-bottom: 20px;">Activité famille</h3>
         <div class="activity-list">
-          ${familyActivity.map(act => {
+          ${(listStats.recentActivity || []).map(act => {
             const initials = act.initials || (act.name ? act.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2) : '??');
             const color = act.color || '#3b82f6';
             return `
@@ -280,7 +279,7 @@ export function createHomeView(userName, listStats, onSwitchTab) {
                 <p class="text-3" style="font-size: 11px;">${act.time}</p>
               </div>
             </div>
-          `}).join(familyActivity.length === 0 ? '<p class="text-3" style="font-size: 13px; text-align: center; padding: 20px;">Aucune activité récente</p>' : '')}
+          `}).join((listStats.recentActivity || []).length === 0 ? '<p class="text-3" style="font-size: 13px; text-align: center; padding: 20px;">Aucune activité récente</p>' : '')}
         </div>
       </div>
       
